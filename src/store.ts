@@ -1,10 +1,13 @@
 import { create } from "zustand";
 import { RESOURCES } from "./data/resources";
 import { RECIPES } from "./data/recipes";
+import { checkUnlocks } from "./systems/unlocker";
 
 interface GameState {
     resources: Record<string, number>;
     cooldowns: Record<string, number>;
+    unlockedNpcs: string[];
+    unlockedRecipes: string[];
 
     tick: (delta: number) => void;
     gather: (resourceId: string) => void;
@@ -23,9 +26,25 @@ const initialCooldowns = Object.fromEntries(
 
 const PASSIVE_RESOURCES = Object.values(RESOURCES).filter((d) => d.rate);
 
+function withUnlocks(get: () => GameState, set: (patch: Partial<GameState>) => void, patch: Partial<GameState>) {
+    const prevResources = get().resources;
+    set(patch);
+    const state = get();
+    if (state.resources !== prevResources) {
+        const newNpcs = checkUnlocks(state);
+        if (newNpcs.length) {
+            set({ unlockedNpcs: [...state.unlockedNpcs, ...newNpcs] });
+        }
+    }
+}
+
+export { type GameState };
+
 export const useGameStore = create<GameState>((set, get) => ({
     resources: initialResources,
     cooldowns: initialCooldowns,
+    unlockedNpcs: [],
+    unlockedRecipes: [],
 
     tick: (delta) => {
         const { resources, cooldowns } = get();
@@ -58,7 +77,7 @@ export const useGameStore = create<GameState>((set, get) => ({
             dirty = true;
         }
 
-        if (dirty) set(update);
+        if (dirty) withUnlocks(get, set, update);
     },
 
     gather: (resourceId) => {
@@ -69,7 +88,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         if (cooldowns[resourceId] > 0 || resources[resourceId] >= def.cap)
             return;
 
-        set({
+        withUnlocks(get, set, {
             resources: {
                 ...resources,
                 [resourceId]: Math.min(
@@ -102,6 +121,6 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
         nextResources[recipe.output.resId] += recipe.output.amnt;
 
-        set({ resources: nextResources });
+        withUnlocks(get, set, { resources: nextResources });
     },
 }));
