@@ -49,5 +49,3 @@ export const NPCS: NpcDef[] = [
     unlockCondition: () => false,
   },
 ];
-
-export const PORTRAIT_PLACEHOLDER = "/portrait-placeholder.jpg";
