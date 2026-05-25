@@ -22,7 +22,7 @@ export const NPCS: NpcDef[] = [
     description: "Another NPC.",
     portrait: "/portrait-placeholder.jpg",
     unlocked: false,
-    unlockCondition: () => false,
+    unlockCondition: (r) => r.prp >= 10,
   },
   {
     id: "npc3",
