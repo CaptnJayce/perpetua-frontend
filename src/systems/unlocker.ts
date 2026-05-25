@@ -1,14 +1,18 @@
 import type { GameState } from "../store";
 import { NPCS } from "../data/npcs";
 
-export function checkUnlocks(state: GameState): string[] {
-  const newlyUnlocked: string[] = [];
+export interface UnlockEvent {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export function checkUnlocks(state: GameState): UnlockEvent[] {
+  const newlyUnlocked: UnlockEvent[] = [];
   for (const npc of NPCS) {
-    if (
-      !state.unlockedNpcs.includes(npc.id) &&
-      npc.unlockCondition(state.resources)
-    ) {
-      newlyUnlocked.push(npc.id);
+    const alreadyUnlocked = state.unlockedNpcs.some((u) => u.id === npc.id);
+    if (!alreadyUnlocked && npc.unlockCondition(state.resources)) {
+      newlyUnlocked.push({ id: npc.id, name: npc.name, description: npc.description });
     }
   }
   return newlyUnlocked;
