@@ -21,10 +21,27 @@ export default function Dialogue() {
     prevCount.current = currentCount;
   });
 
+  const fullNpc = selectedNpc
+    ? NPCS.find((n) => n.id === selectedNpc.id)
+    : null;
+
   return (
     <div className="dialogue">
       <div className="dialogue-content">
-        <h2>{selectedNpc?.name}</h2>
+        {fullNpc && (
+          <>
+            <div className="dialogue-left">
+              <h2>{fullNpc.name}</h2>
+            </div>
+            <div className="dialogue-right">
+              <img
+                className="body-shot"
+                src={fullNpc.bodyShot}
+                alt={fullNpc.name}
+              />
+            </div>
+          </>
+        )}
       </div>
       <div className="npc-portraits">
         {NPCS.map((npc) => {
@@ -54,17 +71,17 @@ export default function Dialogue() {
             </button>
           );
         })}
-
-        {unlockedNpcs.length > 0 && (
-          <Modal
-            open={modalOpen}
-            onClose={() => setModalOpen(false)}
-            title={selectedNpc?.name}
-          >
-            <p>{selectedNpc?.description}</p>
-          </Modal>
-        )}
       </div>
+
+      {unlockedNpcs.length > 0 && (
+        <Modal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          title={selectedNpc?.name}
+        >
+          <p>{selectedNpc?.description}</p>
+        </Modal>
+      )}
     </div>
   );
 }

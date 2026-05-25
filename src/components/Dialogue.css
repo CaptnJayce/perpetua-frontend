@@ -1,63 +1,100 @@
 .dialogue {
-    width: 100%;
-    height: 100%;
-    background: var(--leather);
-    display: flex;
-    flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: var(--leather);
+  display: flex;
+  flex-direction: row;
 }
 
 .dialogue-content {
-    flex: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+}
+
+.dialogue-left {
+  flex: 40%;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dialogue-right {
+  flex: 60%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.body-shot {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
 }
 
 .npc-portraits {
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
-    padding: 10px 12px;
-    background: color-mix(in srgb, var(--iron) 40%, var(--leather));
-    border-top: 2px solid var(--brass);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 10px;
+  background: color-mix(in srgb, var(--iron) 40%, var(--leather));
+  border-left: 2px solid var(--brass);
+  overflow-y: auto;
 }
 
 .npc-portrait {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    border: 2px solid var(--brass);
-    padding: 0;
-    cursor: pointer;
-    overflow: hidden;
-    background: var(--iron);
-    transition: border-color 0.15s, transform 0.1s;
-    flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--brass);
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  background: var(--iron);
+  transition:
+    border-color 0.15s,
+    transform 0.1s;
+  flex-shrink: 0;
 }
 
 .npc-portrait:hover {
-    border-color: var(--parchment);
-    transform: scale(1.08);
+  border-color: var(--parchment);
+  transform: scale(1.08);
 }
 
 .npc-portrait--selected {
-    border-color: var(--parchment);
-    box-shadow: 0 0 8px var(--brass);
+  border-color: var(--parchment);
+  box-shadow: 0 0 8px var(--brass);
 }
 
 .npc-portrait--shake {
-    animation: shake 0.4s ease;
+  animation: shake 0.4s ease;
 }
 
 @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    20% { transform: translateX(-4px); }
-    40% { transform: translateX(4px); }
-    60% { transform: translateX(-3px); }
-    80% { transform: translateX(3px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-4px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
 }
 
 .npc-portrait img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center top;
-    display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
 }
