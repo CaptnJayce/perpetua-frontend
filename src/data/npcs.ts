@@ -1,15 +1,147 @@
 export interface NpcDef {
-    id: string;
-    name: string;
-    portrait?: string;
+  id: string;
+  name: string;
+  description: string;
+  portrait: string;
+  bodyShot: string;
+  unlockCondition: (resources: Record<string, number>) => boolean;
+  unlocked: boolean;
 }
 
 export const NPCS: NpcDef[] = [
-    { id: "npc1", name: "NPC 1" },
-    { id: "npc2", name: "NPC 2" },
-    { id: "npc3", name: "NPC 3" },
-    { id: "npc4", name: "NPC 4" },
-    { id: "npc5", name: "NPC 5" },
+  {
+    id: "worker",
+    name: "Worker",
+    description: "A basic worker NPC.",
+    portrait: "/portrait-placeholder.jpg",
+    bodyShot: "/body-shot-portrait.png",
+    unlocked: false,
+    unlockCondition: (r) => r.tmp >= 20,
+  },
+  {
+    id: "npc2",
+    name: "NPC 2",
+    description: "Another NPC.",
+    portrait: "/portrait-placeholder.jpg",
+    bodyShot: "/body-shot-portrait.png",
+    unlocked: false,
+    unlockCondition: (r) => r.prp >= 10,
+  },
+  {
+    id: "npc3",
+    name: "NPC 3",
+    description: "Yet another NPC.",
+    portrait: "/portrait-placeholder.jpg",
+    bodyShot: "/body-shot-portrait.png",
+    unlocked: false,
+    unlockCondition: () => false,
+  },
+  {
+    id: "npc4",
+    name: "NPC 4",
+    description: "Yet another NPC.",
+    portrait: "/portrait-placeholder.jpg",
+    bodyShot: "/body-shot-portrait.png",
+    unlocked: false,
+    unlockCondition: () => false,
+  },
+  {
+    id: "npc5",
+    name: "NPC 5",
+    description: "Yet another NPC.",
+    portrait: "/portrait-placeholder.jpg",
+    bodyShot: "/body-shot-portrait.png",
+    unlocked: false,
+    unlockCondition: () => false,
+  },
+  {
+    id: "npc6",
+    name: "NPC 6",
+    description: "Yet another NPC.",
+    portrait: "/portrait-placeholder.jpg",
+    bodyShot: "/body-shot-portrait.png",
+    unlocked: false,
+    unlockCondition: () => false,
+  },
+  {
+    id: "npc7",
+    name: "NPC 7",
+    description: "Yet another NPC.",
+    portrait: "/portrait-placeholder.jpg",
+    bodyShot: "/body-shot-portrait.png",
+    unlocked: false,
+    unlockCondition: () => false,
+  },
+  {
+    id: "npc8",
+    name: "NPC 8",
+    description: "Yet another NPC.",
+    portrait: "/portrait-placeholder.jpg",
+    bodyShot: "/body-shot-portrait.png",
+    unlocked: false,
+    unlockCondition: () => false,
+  },
+  {
+    id: "npc9",
+    name: "NPC 9",
+    description: "Yet another NPC.",
+    portrait: "/portrait-placeholder.jpg",
+    bodyShot: "/body-shot-portrait.png",
+    unlocked: false,
+    unlockCondition: () => false,
+  },
+  {
+    id: "npc10",
+    name: "NPC 10",
+    description: "Yet another NPC.",
+    portrait: "/portrait-placeholder.jpg",
+    bodyShot: "/body-shot-portrait.png",
+    unlocked: false,
+    unlockCondition: () => false,
+  },
+  {
+    id: "npc11",
+    name: "NPC 11",
+    description: "Yet another NPC.",
+    portrait: "/portrait-placeholder.jpg",
+    bodyShot: "/body-shot-portrait.png",
+    unlocked: false,
+    unlockCondition: () => false,
+  },
+  {
+    id: "npc12",
+    name: "NPC 12",
+    description: "Yet another NPC.",
+    portrait: "/portrait-placeholder.jpg",
+    bodyShot: "/body-shot-portrait.png",
+    unlocked: false,
+    unlockCondition: () => false,
+  },
+  {
+    id: "npc13",
+    name: "NPC 13",
+    description: "Yet another NPC.",
+    portrait: "/portrait-placeholder.jpg",
+    bodyShot: "/body-shot-portrait.png",
+    unlocked: false,
+    unlockCondition: () => false,
+  },
+  {
+    id: "npc14",
+    name: "NPC 14",
+    description: "Yet another NPC.",
+    portrait: "/portrait-placeholder.jpg",
+    bodyShot: "/body-shot-portrait.png",
+    unlocked: false,
+    unlockCondition: () => false,
+  },
+  {
+    id: "npc15",
+    name: "NPC 15",
+    description: "Yet another NPC.",
+    portrait: "/portrait-placeholder.jpg",
+    bodyShot: "/body-shot-portrait.png",
+    unlocked: false,
+    unlockCondition: () => false,
+  },
 ];
-
-export const PORTRAIT_PLACEHOLDER = "/portrait-placeholder.jpg";

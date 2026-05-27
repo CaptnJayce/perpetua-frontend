@@ -1,12 +1,17 @@
 .nav {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border-bottom: solid;
-    border-width: 2px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-bottom: solid;
+  border-width: 2px;
 }
 
-.nav-elements {
-    font-size: 24px;
-    padding: 10px 0 10px 0;
+.nav-elements-left,
+.nav-elements-middle,
+.nav-elements-right {
+  display: flex;
+  justify-content: center;
+  width: 30%;
+  font-size: 24px;
+  padding: 10px 0 10px 0;
 }
