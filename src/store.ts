@@ -13,10 +13,12 @@ interface GameState {
   cooldowns: Record<string, number>;
   unlockedNpcs: UnlockEvent[];
   unlockedRecipes: string[];
+  flags: string[];
 
   tick: (delta: number) => void;
   gather: (resourceId: string) => void;
   craft: (recipeId: string) => void;
+  setFlag: (flag: string) => void;
 }
 
 const initialResources = Object.fromEntries(
@@ -44,6 +46,22 @@ function withUnlocks(
     if (newNpcs.length) {
       set({ unlockedNpcs: [...state.unlockedNpcs, ...newNpcs] });
     }
+    checkFlags(state, set);
+  }
+}
+
+const CONDITIONAL_FLAGS = [
+  { flag: "tmp_50", condition: (r: Record<string, number>) => r.tmp >= 50 },
+];
+
+function checkFlags(
+  state: GameState,
+  set: (patch: Partial<GameState>) => void,
+) {
+  for (const { flag, condition } of CONDITIONAL_FLAGS) {
+    if (!state.flags.includes(flag) && condition(state.resources)) {
+      set({ flags: [...state.flags, flag] });
+    }
   }
 }
 
@@ -56,6 +74,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     { id: "mantle-of-logic", name: "Mantle of Logic" },
   ],
   unlockedRecipes: [],
+  flags: [],
 
   tick: (delta) => {
     const { resources, cooldowns } = get();
@@ -127,5 +146,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     nextResources[recipe.output.resId] += recipe.output.amnt;
 
     withUnlocks(get, set, { resources: nextResources });
+  },
+
+  setFlag: (flag) => {
+    const { flags } = get();
+    if (!flags.includes(flag)) {
+      set({ flags: [...flags, flag] });
+    }
   },
 }));

@@ -13,6 +13,8 @@ interface NpcDialogueState {
 
 export default function Dialogue() {
   const unlockedNpcs = useGameStore((s) => s.unlockedNpcs);
+  const flags = useGameStore((s) => s.flags);
+  const setFlag = useGameStore((s) => s.setFlag);
   const [selectedNpc, setSelectedNpc] = useState<UnlockEvent | null>(null);
   const [dialogueIndex, setDialogueIndex] = useState(0);
   const [npcDialogueStates, setNpcDialogueStates] = useState<
@@ -53,8 +55,13 @@ export default function Dialogue() {
     text: string;
     nextNodeId?: string;
     affinityDelta?: number;
+    setFlag?: string;
   }) {
     if (!selectedNpc || !currentNode) return;
+
+    if (option.setFlag) {
+      setFlag(option.setFlag);
+    }
 
     const nextNodeId = option.nextNodeId;
     const completed = !nextNodeId || nextNodeId === "end";
@@ -110,21 +117,27 @@ export default function Dialogue() {
                     </p>
                   </div>
                 ) : (
-                  <p>{currentNode?.text ?? fullNpc.description}</p>
+                  <p>
+                    {currentNode?.requireFlag && !flags.includes(currentNode.requireFlag)
+                      ? fullNpc.description
+                      : currentNode?.text ?? fullNpc.description}
+                  </p>
                 )}
               </div>
 
               {!isComplete && currentNode?.options && (
                 <div className="dialogue-options">
-                  {currentNode.options.map((option, i) => (
-                    <button
-                      key={i}
-                      className="dialogue-option"
-                      onClick={() => handleOptionClick(option)}
-                    >
-                      {option.text}
-                    </button>
-                  ))}
+                  {currentNode.options
+                    .filter((option) => !option.requireFlag || flags.includes(option.requireFlag))
+                    .map((option, i) => (
+                      <button
+                        key={i}
+                        className="dialogue-option"
+                        onClick={() => handleOptionClick(option)}
+                      >
+                        {option.text}
+                      </button>
+                    ))}
                 </div>
               )}
 

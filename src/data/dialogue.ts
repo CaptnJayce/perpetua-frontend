@@ -2,11 +2,14 @@ export interface DialogueOption {
   text: string;
   nextNodeId?: string;
   affinityDelta?: number;
+  setFlag?: string;
+  requireFlag?: string;
 }
 
 export interface DialogueNode {
   id: string;
   text: string;
+  requireFlag?: string;
   options?: DialogueOption[];
 }
 
@@ -30,13 +33,21 @@ export const DIALOGUE_TREES: Record<string, Record<string, DialogueNode>> = {
       id: "goal",
       text: "Once you've proven you can take the kinetic energy from the planets orbit with a generator and store it in a battery - we'll speak again. Until then, Felicity.",
       options: [
-        { text: "Until then!", nextNodeId: "end" },
+        { text: "Until then!", nextNodeId: "end", setFlag: "completed_tutorial" },
       ],
     },
     end: {
       id: "end",
       text: "...",
       options: [],
+    },
+    revisit: {
+      id: "revisit",
+      requireFlag: "completed_tutorial",
+      text: "Good to see you again. Your progress is coming along nicely.",
+      options: [
+        { text: "Thank you", nextNodeId: "end" },
+      ],
     },
   },
 };
