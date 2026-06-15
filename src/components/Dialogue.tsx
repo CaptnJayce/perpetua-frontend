@@ -37,7 +37,20 @@ export default function Dialogue() {
   useEffect(() => {
     if (currentCount > prevCount.current) {
       setShouldAutoClose(false);
-      setSelectedNpc(unlockedNpcs[unlockedNpcs.length - 1]);
+      const newNpc = unlockedNpcs[unlockedNpcs.length - 1];
+      const nextNode = getNextAvailableNode(newNpc.id, flags, []);
+      if (nextNode) {
+        setDialogueActive(true);
+        setNpcDialogueStates((prev) => ({
+          ...prev,
+          [newNpc.id]: {
+            currentNodeId: nextNode,
+            completed: false,
+            history: [],
+          },
+        }));
+      }
+      setSelectedNpc(newNpc);
     }
     prevCount.current = currentCount;
   });
