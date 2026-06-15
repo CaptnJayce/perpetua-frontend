@@ -5,6 +5,7 @@ export interface NpcDef {
   portrait: string;
   bodyShot: string;
   unlockCondition: (resources: Record<string, number>) => boolean;
+  requireFlag?: string;
   unlocked: boolean;
 }
 
@@ -26,7 +27,8 @@ export const NPCS: NpcDef[] = [
     portrait: "/portrait-placeholder.jpg",
     bodyShot: "/body-shot-portrait.png",
     unlocked: false,
-    unlockCondition: (r) => r.tmp >= 50,
+    unlockCondition: () => true,
+    requireFlag: "unlock_worker_one",
   },
   {
     id: "hexry",

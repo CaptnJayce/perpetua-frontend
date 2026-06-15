@@ -51,7 +51,7 @@ function withUnlocks(
 }
 
 const CONDITIONAL_FLAGS = [
-  { flag: "tmp_50", condition: (r: Record<string, number>) => r.tmp >= 50 },
+  { flag: "completed_tutorial", condition: (r: Record<string, number>) => r.tmp >= 50 },
 ];
 
 function checkFlags(

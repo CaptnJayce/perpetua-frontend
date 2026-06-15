@@ -49,6 +49,14 @@ export const DIALOGUE_TREES: Record<string, Record<string, DialogueNode>> = {
         { text: "Thank you", nextNodeId: "end" },
       ],
     },
+    worker_visit: {
+      id: "worker_visit",
+      requireFlag: "completed_tutorial",
+      text: "Good progress so far! I've brought over one of Hexry's workers to help you get along, treat him well!",
+      options: [
+        { text: "Thank you", nextNodeId: "end", setFlag: "unlock_worker_one" },
+      ],
+    },
   },
 };
 
