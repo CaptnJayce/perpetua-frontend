@@ -28,11 +28,13 @@ export default function Dialogue() {
     Record<string, NpcDialogueState>
   >({});
   const [shakingId, setShakingId] = useState<string | null>(null);
+  const [shouldAutoClose, setShouldAutoClose] = useState(false);
   const prevCount = useRef(0);
   const currentCount = unlockedNpcs.length;
 
   useEffect(() => {
     if (currentCount > prevCount.current) {
+      setShouldAutoClose(false);
       setSelectedNpc(unlockedNpcs[unlockedNpcs.length - 1]);
     }
     prevCount.current = currentCount;
@@ -58,17 +60,20 @@ export default function Dialogue() {
   const isComplete = dialogueState?.completed ?? false;
   const history = dialogueState?.history ?? [];
 
-  // Auto-close when dialogue is completed
+  // Auto-close when dialogue is completed via option click
   useEffect(() => {
-    if (isComplete && selectedNpc) {
-      // Find the actual entry node by looking back through history
+    if (shouldAutoClose && isComplete && selectedNpc) {
       const firstHistoryEntry = history[0];
       if (firstHistoryEntry) {
         completeDialogueNode(selectedNpc.id, firstHistoryEntry.nodeId);
       }
-      setSelectedNpc(null);
+      const timer = setTimeout(() => {
+        setSelectedNpc(null);
+        setShouldAutoClose(false);
+      }, 300);
+      return () => clearTimeout(timer);
     }
-  }, [isComplete, selectedNpc, history, completeDialogueNode]);
+  }, [shouldAutoClose, isComplete, selectedNpc, history, completeDialogueNode]);
 
   function handleOptionClick(option: {
     text: string;
@@ -84,6 +89,9 @@ export default function Dialogue() {
 
     const nextNodeId = option.nextNodeId;
     const completed = !nextNodeId || nextNodeId === "end";
+    if (completed) {
+      setShouldAutoClose(true);
+    }
 
     const historyEntry = {
       nodeId: currentNode.id,
@@ -130,6 +138,7 @@ export default function Dialogue() {
 
     if (nextNode) {
       // New dialogue available — start it
+      setShouldAutoClose(false);
       setNpcDialogueStates((prev) => ({
         ...prev,
         [npc.id]: {
@@ -141,6 +150,7 @@ export default function Dialogue() {
       setSelectedNpc(npc);
     } else {
       // No new dialogue — show history replay
+      setShouldAutoClose(false);
       const storeHistory = progress?.history ?? [];
       setNpcDialogueStates((prev) => {
         const prevState = prev[npc.id];

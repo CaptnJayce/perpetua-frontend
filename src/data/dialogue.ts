@@ -40,7 +40,7 @@ export const DIALOGUE_TREES: Record<string, DialogueTree> = {
         id: "goal",
         text: "Once you've proven you can take the kinetic energy from the planets orbit with a generator and store it in a battery - we'll speak again. Until then, Felicity.",
         options: [
-          { text: "Until then!", nextNodeId: "end", setFlag: "completed_tutorial" },
+          { text: "Until then!", nextNodeId: "end" },
         ],
       },
       end: {

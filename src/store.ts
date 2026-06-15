@@ -160,7 +160,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   setFlag: (flag) => {
     const { flags } = get();
     if (!flags.includes(flag)) {
-      set({ flags: [...flags, flag] });
+      const nextFlags = [...flags, flag];
+      set({ flags: nextFlags });
+      const state = get();
+      const newNpcs = checkUnlocks(state);
+      if (newNpcs.length) {
+        set({ unlockedNpcs: [...state.unlockedNpcs, ...newNpcs] });
+      }
     }
   },
 
