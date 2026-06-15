@@ -20,6 +20,7 @@ interface GameState {
   unlockedRecipes: string[];
   flags: string[];
   npcDialogueProgress: Record<string, NpcDialogueProgress>;
+  debugMode: boolean;
 
   tick: (delta: number) => void;
   gather: (resourceId: string) => void;
@@ -27,6 +28,7 @@ interface GameState {
   setFlag: (flag: string) => void;
   completeDialogueNode: (npcId: string, nodeId: string) => void;
   addDialogueHistory: (npcId: string, entry: { nodeId: string; npcText: string; playerResponse: string }) => void;
+  toggleDebugMode: () => void;
 }
 
 const initialResources = Object.fromEntries(
@@ -84,6 +86,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   unlockedRecipes: [],
   flags: [],
   npcDialogueProgress: {},
+  debugMode: false,
 
   tick: (delta) => {
     const { resources, cooldowns } = get();
@@ -121,15 +124,18 @@ export const useGameStore = create<GameState>((set, get) => ({
     const def = RESOURCES[resourceId];
     if (!def?.gatherAmt || !def?.gatherCd) return;
 
-    const { resources, cooldowns } = get();
-    if (cooldowns[resourceId] > 0 || resources[resourceId] >= def.cap) return;
+    const { resources, cooldowns, debugMode } = get();
+    if (!debugMode && cooldowns[resourceId] > 0) return;
+    if (resources[resourceId] >= def.cap) return;
 
     withUnlocks(get, set, {
       resources: {
         ...resources,
         [resourceId]: Math.min(def.cap, resources[resourceId] + def.gatherAmt),
       },
-      cooldowns: { ...cooldowns, [resourceId]: def.gatherCd },
+      cooldowns: debugMode
+        ? { ...cooldowns }
+        : { ...cooldowns, [resourceId]: def.gatherCd },
     });
   },
 
@@ -198,5 +204,10 @@ export const useGameStore = create<GameState>((set, get) => ({
         },
       },
     });
+  },
+
+  toggleDebugMode: () => {
+    const { debugMode } = get();
+    set({ debugMode: !debugMode });
   },
 }));

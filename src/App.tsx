@@ -9,6 +9,8 @@ import Dialogue from "./components/Dialogue";
 import Actions from "./components/Actions";
 
 export default function App() {
+    const toggleDebugMode = useGameStore((s) => s.toggleDebugMode);
+
     useEffect(() => {
         const TICK_MS = 100;
         const delta = TICK_MS / 1000;
@@ -17,6 +19,16 @@ export default function App() {
         }, TICK_MS);
         return () => clearInterval(interval);
     }, []);
+
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            if (e.shiftKey && e.key === "D") {
+                toggleDebugMode();
+            }
+        };
+        document.addEventListener("keydown", handler);
+        return () => document.removeEventListener("keydown", handler);
+    }, [toggleDebugMode]);
 
     return (
         <Group className="main" orientation="horizontal">
