@@ -84,23 +84,29 @@ export default function Actions() {
 
             <section>
                 <h3>Gather</h3>
-                {gatherables.map((r) => (
-                    <GatherButton key={r.id} resourceId={r.id} />
-                ))}
+                <div className="btn-grid">
+                    {gatherables.map((r) => (
+                        <GatherButton key={r.id} resourceId={r.id} />
+                    ))}
+                </div>
             </section>
 
             <section>
                 <h3>Craft</h3>
-                {Object.values(RECIPES).map((recipe) => (
-                    <CraftButton key={recipe.id} recipe={recipe} />
-                ))}
+                <div className="btn-grid">
+                    {Object.values(RECIPES).map((recipe) => (
+                        <CraftButton key={recipe.id} recipe={recipe} />
+                    ))}
+                </div>
             </section>
 
             <section>
                 <h3>Upgrades</h3>
-                {Object.values(UPGRADES).map((upgrade) => (
-                    <UpgradeButton key={upgrade.id} upgradeId={upgrade.id} />
-                ))}
+                <div className="btn-grid">
+                    {Object.values(UPGRADES).map((upgrade) => (
+                        <UpgradeButton key={upgrade.id} upgradeId={upgrade.id} />
+                    ))}
+                </div>
             </section>
         </div>
     );

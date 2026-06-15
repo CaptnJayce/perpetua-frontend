@@ -6,15 +6,21 @@
     overflow-y: auto;
 }
 
+.btn-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
 .action-btn {
-    display: block;
-    width: 100%;
+    display: inline-flex;
+    flex: 1 1 auto;
+    min-width: 140px;
     background: var(--iron);
     color: var(--parchment);
     border: 1px solid var(--brass);
     border-radius: 4px;
     padding: 8px 12px;
-    margin-bottom: 6px;
     cursor: pointer;
     font-size: 13px;
     text-align: left;
