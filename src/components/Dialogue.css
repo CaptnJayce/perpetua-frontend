@@ -165,8 +165,24 @@
   box-shadow: 0 0 8px var(--brass);
 }
 
+.npc-portrait--new {
+  border-color: #4caf50;
+  box-shadow: 0 0 8px #4caf50;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
 .npc-portrait--shake {
   animation: shake 0.4s ease;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 8px #4caf50;
+  }
+  50% {
+    box-shadow: 0 0 16px #4caf50;
+  }
 }
 
 @keyframes shake {

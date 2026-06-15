@@ -8,17 +8,25 @@ interface UnlockEvent {
   name: string;
 }
 
+export interface NpcDialogueProgress {
+  completedNodeIds: string[];
+  history: { nodeId: string; npcText: string; playerResponse: string }[];
+}
+
 interface GameState {
   resources: Record<string, number>;
   cooldowns: Record<string, number>;
   unlockedNpcs: UnlockEvent[];
   unlockedRecipes: string[];
   flags: string[];
+  npcDialogueProgress: Record<string, NpcDialogueProgress>;
 
   tick: (delta: number) => void;
   gather: (resourceId: string) => void;
   craft: (recipeId: string) => void;
   setFlag: (flag: string) => void;
+  completeDialogueNode: (npcId: string, nodeId: string) => void;
+  addDialogueHistory: (npcId: string, entry: { nodeId: string; npcText: string; playerResponse: string }) => void;
 }
 
 const initialResources = Object.fromEntries(
@@ -75,6 +83,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   ],
   unlockedRecipes: [],
   flags: [],
+  npcDialogueProgress: {},
 
   tick: (delta) => {
     const { resources, cooldowns } = get();
@@ -153,5 +162,35 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!flags.includes(flag)) {
       set({ flags: [...flags, flag] });
     }
+  },
+
+  completeDialogueNode: (npcId, nodeId) => {
+    const { npcDialogueProgress } = get();
+    const prev = npcDialogueProgress[npcId] || { completedNodeIds: [], history: [] };
+    if (!prev.completedNodeIds.includes(nodeId)) {
+      set({
+        npcDialogueProgress: {
+          ...npcDialogueProgress,
+          [npcId]: {
+            ...prev,
+            completedNodeIds: [...prev.completedNodeIds, nodeId],
+          },
+        },
+      });
+    }
+  },
+
+  addDialogueHistory: (npcId, entry) => {
+    const { npcDialogueProgress } = get();
+    const prev = npcDialogueProgress[npcId] || { completedNodeIds: [], history: [] };
+    set({
+      npcDialogueProgress: {
+        ...npcDialogueProgress,
+        [npcId]: {
+          ...prev,
+          history: [...prev.history, entry],
+        },
+      },
+    });
   },
 }));

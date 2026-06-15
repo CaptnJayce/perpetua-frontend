@@ -3,7 +3,11 @@ import { NPCS } from "../data/npcs";
 import { useGameStore } from "../store";
 import { useEffect, useRef, useState } from "react";
 import type { UnlockEvent } from "../systems/unlocker";
-import { getCurrentDialogue, type DialogueHistoryEntry } from "../data/dialogue";
+import {
+  getCurrentDialogue,
+  getNextAvailableNode,
+  type DialogueHistoryEntry,
+} from "../data/dialogue";
 
 interface NpcDialogueState {
   currentNodeId: string;
@@ -14,7 +18,10 @@ interface NpcDialogueState {
 export default function Dialogue() {
   const unlockedNpcs = useGameStore((s) => s.unlockedNpcs);
   const flags = useGameStore((s) => s.flags);
+  const npcDialogueProgress = useGameStore((s) => s.npcDialogueProgress);
   const setFlag = useGameStore((s) => s.setFlag);
+  const completeDialogueNode = useGameStore((s) => s.completeDialogueNode);
+  const addDialogueHistory = useGameStore((s) => s.addDialogueHistory);
   const [selectedNpc, setSelectedNpc] = useState<UnlockEvent | null>(null);
   const [dialogueIndex, setDialogueIndex] = useState(0);
   const [npcDialogueStates, setNpcDialogueStates] = useState<
@@ -51,6 +58,18 @@ export default function Dialogue() {
   const isComplete = dialogueState?.completed ?? false;
   const history = dialogueState?.history ?? [];
 
+  // Auto-close when dialogue is completed
+  useEffect(() => {
+    if (isComplete && selectedNpc) {
+      // Find the actual entry node by looking back through history
+      const firstHistoryEntry = history[0];
+      if (firstHistoryEntry) {
+        completeDialogueNode(selectedNpc.id, firstHistoryEntry.nodeId);
+      }
+      setSelectedNpc(null);
+    }
+  }, [isComplete, selectedNpc, history, completeDialogueNode]);
+
   function handleOptionClick(option: {
     text: string;
     nextNodeId?: string;
@@ -66,6 +85,14 @@ export default function Dialogue() {
     const nextNodeId = option.nextNodeId;
     const completed = !nextNodeId || nextNodeId === "end";
 
+    const historyEntry = {
+      nodeId: currentNode.id,
+      npcText: currentNode.text,
+      playerResponse: option.text,
+    };
+
+    addDialogueHistory(selectedNpc.id, historyEntry);
+
     setNpcDialogueStates((prev) => {
       const prevState = prev[selectedNpc.id] || {
         currentNodeId: "intro",
@@ -78,17 +105,56 @@ export default function Dialogue() {
         [selectedNpc.id]: {
           currentNodeId: nextNodeId || "end",
           completed,
-          history: [
-            ...prevState.history,
-            {
-              nodeId: currentNode.id,
-              npcText: currentNode.text,
-              playerResponse: option.text,
-            },
-          ],
+          history: [...prevState.history, historyEntry],
         },
       };
     });
+  }
+
+  function hasNewDialogue(npcId: string): boolean {
+    const progress = npcDialogueProgress[npcId];
+    const completedNodeIds = progress?.completedNodeIds ?? [];
+    return getNextAvailableNode(npcId, flags, completedNodeIds) !== null;
+  }
+
+  function handlePortraitClick(npc: UnlockEvent, isUnlocked: boolean) {
+    if (!isUnlocked) {
+      setShakingId(npc.id);
+      setTimeout(() => setShakingId(null), 400);
+      return;
+    }
+
+    const progress = npcDialogueProgress[npc.id];
+    const completedNodeIds = progress?.completedNodeIds ?? [];
+    const nextNode = getNextAvailableNode(npc.id, flags, completedNodeIds);
+
+    if (nextNode) {
+      // New dialogue available — start it
+      setNpcDialogueStates((prev) => ({
+        ...prev,
+        [npc.id]: {
+          currentNodeId: nextNode,
+          completed: false,
+          history: [],
+        },
+      }));
+      setSelectedNpc(npc);
+    } else {
+      // No new dialogue — show history replay
+      const storeHistory = progress?.history ?? [];
+      setNpcDialogueStates((prev) => {
+        const prevState = prev[npc.id];
+        return {
+          ...prev,
+          [npc.id]: {
+            currentNodeId: prevState?.currentNodeId ?? "end",
+            completed: true,
+            history: storeHistory,
+          },
+        };
+      });
+      setSelectedNpc(npc);
+    }
   }
 
   return (
@@ -118,7 +184,8 @@ export default function Dialogue() {
                   </div>
                 ) : (
                   <p>
-                    {currentNode?.requireFlag && !flags.includes(currentNode.requireFlag)
+                    {currentNode?.requireFlag &&
+                    !flags.includes(currentNode.requireFlag)
                       ? fullNpc.description
                       : currentNode?.text ?? fullNpc.description}
                   </p>
@@ -128,7 +195,10 @@ export default function Dialogue() {
               {!isComplete && currentNode?.options && (
                 <div className="dialogue-options">
                   {currentNode.options
-                    .filter((option) => !option.requireFlag || flags.includes(option.requireFlag))
+                    .filter(
+                      (option) =>
+                        !option.requireFlag || flags.includes(option.requireFlag),
+                    )
                     .map((option, i) => (
                       <button
                         key={i}
@@ -179,20 +249,14 @@ export default function Dialogue() {
           const isUnlocked = unlockedNpcs.some((u) => u.id === npc.id);
           const isSelected = selectedNpc?.id === npc.id;
           const isShaking = shakingId === npc.id;
+          const hasNew = isUnlocked && hasNewDialogue(npc.id);
 
           return (
             <button
               key={npc.id}
-              className={`npc-portrait ${isSelected ? "npc-portrait--selected" : ""} ${isShaking ? "npc-portrait--shake" : ""}`}
+              className={`npc-portrait ${isSelected ? "npc-portrait--selected" : ""} ${isShaking ? "npc-portrait--shake" : ""} ${hasNew ? "npc-portrait--new" : ""}`}
               title={npc.name}
-              onClick={() => {
-                if (isUnlocked) {
-                  setSelectedNpc(npc);
-                } else {
-                  setShakingId(npc.id);
-                  setTimeout(() => setShakingId(null), 400);
-                }
-              }}
+              onClick={() => handlePortraitClick(npc, isUnlocked)}
             >
               <img
                 src={npc.portrait}
