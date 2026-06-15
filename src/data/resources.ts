@@ -1,4 +1,4 @@
-export type ResourceCategory = "base" | "partial" | "crafted" | "quest";
+export type ResourceCategory = "base" | "partial" | "crafted" | "milestone" | "quest";
 
 export interface ResourceDef {
     id: string;
@@ -62,6 +62,20 @@ export const RESOURCES: Record<string, ResourceDef> = {
         label: "Beams",
         cap: 50,
         category: "partial",
+        displayAsInt: true,
+    },
+    pkg: {
+        id: "pkg",
+        label: "Perpetual Kinetic Generator",
+        cap: 1,
+        category: "milestone",
+        displayAsInt: true,
+    },
+    pks: {
+        id: "pks",
+        label: "Perpetual Kinetic Storage",
+        cap: 1,
+        category: "milestone",
         displayAsInt: true,
     },
 };
