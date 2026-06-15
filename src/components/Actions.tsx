@@ -2,6 +2,7 @@ import "./Actions.css";
 import { useGameStore } from "../store";
 import { RESOURCES } from "../data/resources";
 import { RECIPES } from "../data/recipes";
+import { UPGRADES } from "../data/upgrades";
 import type { RecipeDef } from "../data/recipes";
 
 const gatherables = Object.values(RESOURCES).filter((r) => r.gatherAmt !== undefined);
@@ -24,7 +25,6 @@ function GatherButton({ resourceId }: { resourceId: string }) {
         </button>
     );
 }
-
 
 function CraftButton({ recipe }: { recipe: RecipeDef }) {
     const canAfford = useGameStore((s) =>
@@ -52,6 +52,31 @@ function CraftButton({ recipe }: { recipe: RecipeDef }) {
     );
 }
 
+function UpgradeButton({ upgradeId }: { upgradeId: string }) {
+    const upgrade = UPGRADES[upgradeId];
+    const resources = useGameStore((s) => s.resources);
+    const purchasedUpgrades = useGameStore((s) => s.purchasedUpgrades);
+    const purchaseUpgrade = useGameStore((s) => s.purchaseUpgrade);
+    const isDialogueActive = useGameStore((s) => s.isDialogueActive);
+
+    const currentCount = purchasedUpgrades[upgradeId] || 0;
+    const maxed = currentCount >= upgrade.maxPurchases;
+    const canAfford = upgrade.cost.every(({ resId, amnt }) => resources[resId] >= amnt);
+    const disabled = isDialogueActive || maxed || !canAfford;
+
+    const costLabel = upgrade.cost
+        .map(({ resId, amnt }) => `${amnt} ${RESOURCES[resId].label}`)
+        .join(", ");
+
+    return (
+        <button className="action-btn upgrade-btn" onClick={() => purchaseUpgrade(upgradeId)} disabled={disabled}>
+            <span className="upgrade-label">{upgrade.label}</span>
+            <span className="upgrade-level">Lv. {currentCount}/{upgrade.maxPurchases}</span>
+            <span className="cost"> — {costLabel}</span>
+        </button>
+    );
+}
+
 export default function Actions() {
     return (
         <div className="actions">
@@ -68,6 +93,13 @@ export default function Actions() {
                 <h3>Craft</h3>
                 {Object.values(RECIPES).map((recipe) => (
                     <CraftButton key={recipe.id} recipe={recipe} />
+                ))}
+            </section>
+
+            <section>
+                <h3>Upgrades</h3>
+                {Object.values(UPGRADES).map((upgrade) => (
+                    <UpgradeButton key={upgrade.id} upgradeId={upgrade.id} />
                 ))}
             </section>
         </div>

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { RESOURCES } from "./data/resources";
 import { RECIPES } from "./data/recipes";
+import { UPGRADES, getEffectiveCap, getEffectiveCooldown, getEffectiveCraftCost } from "./data/upgrades";
 import { checkUnlocks } from "./systems/unlocker";
 
 interface UnlockEvent {
@@ -22,6 +23,7 @@ interface GameState {
   npcDialogueProgress: Record<string, NpcDialogueProgress>;
   debugMode: boolean;
   isDialogueActive: boolean;
+  purchasedUpgrades: Record<string, number>;
 
   tick: (delta: number) => void;
   gather: (resourceId: string) => void;
@@ -31,6 +33,7 @@ interface GameState {
   addDialogueHistory: (npcId: string, entry: { nodeId: string; npcText: string; playerResponse: string }) => void;
   toggleDebugMode: () => void;
   setDialogueActive: (active: boolean) => void;
+  purchaseUpgrade: (upgradeId: string) => void;
 }
 
 const initialResources = Object.fromEntries(
@@ -90,6 +93,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   npcDialogueProgress: {},
   debugMode: false,
   isDialogueActive: false,
+  purchasedUpgrades: {},
 
   tick: (delta) => {
     const { resources, cooldowns } = get();
@@ -127,18 +131,21 @@ export const useGameStore = create<GameState>((set, get) => ({
     const def = RESOURCES[resourceId];
     if (!def?.gatherAmt || !def?.gatherCd) return;
 
-    const { resources, cooldowns, debugMode } = get();
+    const { resources, cooldowns, debugMode, purchasedUpgrades } = get();
+    const effectiveCap = getEffectiveCap(resourceId, def.cap, purchasedUpgrades);
+    const effectiveCd = getEffectiveCooldown(def.gatherCd, purchasedUpgrades);
+
     if (!debugMode && cooldowns[resourceId] > 0) return;
-    if (resources[resourceId] >= def.cap) return;
+    if (resources[resourceId] >= effectiveCap) return;
 
     withUnlocks(get, set, {
       resources: {
         ...resources,
-        [resourceId]: Math.min(def.cap, resources[resourceId] + def.gatherAmt),
+        [resourceId]: Math.min(effectiveCap, resources[resourceId] + def.gatherAmt),
       },
       cooldowns: debugMode
         ? { ...cooldowns }
-        : { ...cooldowns, [resourceId]: def.gatherCd },
+        : { ...cooldowns, [resourceId]: effectiveCd },
     });
   },
 
@@ -146,19 +153,24 @@ export const useGameStore = create<GameState>((set, get) => ({
     const recipe = RECIPES[recipeId];
     if (!recipe) return;
 
-    const { resources } = get();
+    const { resources, purchasedUpgrades } = get();
+    const outputDef = RESOURCES[recipe.output.resId];
+    const effectiveCap = getEffectiveCap(recipe.output.resId, outputDef.cap, purchasedUpgrades);
 
-    const canCraft = recipe.inputs.every(
+    const effectiveInputs = recipe.inputs.map(({ resId, amnt }) => ({
+      resId,
+      amnt: getEffectiveCraftCost(amnt, purchasedUpgrades),
+    }));
+
+    const canCraft = effectiveInputs.every(
       ({ resId, amnt }) => resources[resId] >= amnt,
     );
-    const outputDef = RESOURCES[recipe.output.resId];
-    const atCap =
-      resources[recipe.output.resId] + recipe.output.amnt > outputDef.cap;
+    const atCap = resources[recipe.output.resId] + recipe.output.amnt > effectiveCap;
 
     if (!canCraft || atCap) return;
 
     const nextResources = { ...resources };
-    for (const { resId, amnt } of recipe.inputs) {
+    for (const { resId, amnt } of effectiveInputs) {
       nextResources[resId] -= amnt;
     }
     nextResources[recipe.output.resId] += recipe.output.amnt;
@@ -216,5 +228,32 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   setDialogueActive: (active) => {
     set({ isDialogueActive: active });
+  },
+
+  purchaseUpgrade: (upgradeId) => {
+    const { resources, purchasedUpgrades } = get();
+    const upgrade = UPGRADES[upgradeId];
+    if (!upgrade) return;
+
+    const currentCount = purchasedUpgrades[upgradeId] || 0;
+    if (currentCount >= upgrade.maxPurchases) return;
+
+    const canAfford = upgrade.cost.every(
+      ({ resId, amnt }) => resources[resId] >= amnt,
+    );
+    if (!canAfford) return;
+
+    const nextResources = { ...resources };
+    for (const { resId, amnt } of upgrade.cost) {
+      nextResources[resId] -= amnt;
+    }
+
+    set({
+      resources: nextResources,
+      purchasedUpgrades: {
+        ...purchasedUpgrades,
+        [upgradeId]: currentCount + 1,
+      },
+    });
   },
 }));
