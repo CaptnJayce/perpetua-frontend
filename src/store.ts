@@ -6,7 +6,6 @@ import { checkUnlocks } from "./systems/unlocker";
 interface UnlockEvent {
   id: string;
   name: string;
-  description: string;
 }
 
 interface GameState {
@@ -53,7 +52,9 @@ export { type GameState };
 export const useGameStore = create<GameState>((set, get) => ({
   resources: initialResources,
   cooldowns: initialCooldowns,
-  unlockedNpcs: [],
+  unlockedNpcs: [
+    { id: "mantle-of-logic", name: "Mantle of Logic" },
+  ],
   unlockedRecipes: [],
 
   tick: (delta) => {
