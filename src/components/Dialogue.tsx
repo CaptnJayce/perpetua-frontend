@@ -31,6 +31,9 @@ export default function Dialogue() {
         {fullNpc && (
           <>
             <div className="dialogue-left">
+              <button className="close-dialogue" onClick={() => setSelectedNpc(null)}>
+                Close Dialogue
+              </button>
               <h2>{fullNpc.name}</h2>
             </div>
             <div className="dialogue-right">

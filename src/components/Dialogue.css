@@ -14,9 +14,26 @@
 
 .dialogue-left {
   flex: 40%;
-  padding: 4px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
+  gap: 12px;
+}
+
+.close-dialogue {
+  background: transparent;
+  color: var(--parchment);
+  border: 1px solid var(--brass);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  align-self: flex-start;
+}
+
+.close-dialogue:hover {
+  background: var(--brass);
+  color: var(--iron);
 }
 
 .dialogue-right {
