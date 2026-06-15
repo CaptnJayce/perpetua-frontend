@@ -21,6 +21,7 @@ interface GameState {
   flags: string[];
   npcDialogueProgress: Record<string, NpcDialogueProgress>;
   debugMode: boolean;
+  isDialogueActive: boolean;
 
   tick: (delta: number) => void;
   gather: (resourceId: string) => void;
@@ -29,6 +30,7 @@ interface GameState {
   completeDialogueNode: (npcId: string, nodeId: string) => void;
   addDialogueHistory: (npcId: string, entry: { nodeId: string; npcText: string; playerResponse: string }) => void;
   toggleDebugMode: () => void;
+  setDialogueActive: (active: boolean) => void;
 }
 
 const initialResources = Object.fromEntries(
@@ -87,6 +89,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   flags: [],
   npcDialogueProgress: {},
   debugMode: false,
+  isDialogueActive: false,
 
   tick: (delta) => {
     const { resources, cooldowns } = get();
@@ -209,5 +212,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   toggleDebugMode: () => {
     const { debugMode } = get();
     set({ debugMode: !debugMode });
+  },
+
+  setDialogueActive: (active) => {
+    set({ isDialogueActive: active });
   },
 }));

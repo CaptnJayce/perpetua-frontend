@@ -15,7 +15,9 @@ export default function App() {
         const TICK_MS = 100;
         const delta = TICK_MS / 1000;
         const interval = setInterval(() => {
-            useGameStore.getState().tick(delta);
+            if (!useGameStore.getState().isDialogueActive) {
+                useGameStore.getState().tick(delta);
+            }
         }, TICK_MS);
         return () => clearInterval(interval);
     }, []);

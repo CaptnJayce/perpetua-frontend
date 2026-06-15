@@ -22,6 +22,8 @@ export default function Dialogue() {
   const setFlag = useGameStore((s) => s.setFlag);
   const completeDialogueNode = useGameStore((s) => s.completeDialogueNode);
   const addDialogueHistory = useGameStore((s) => s.addDialogueHistory);
+  const setDialogueActive = useGameStore((s) => s.setDialogueActive);
+  const isDialogueActive = useGameStore((s) => s.isDialogueActive);
   const [selectedNpc, setSelectedNpc] = useState<UnlockEvent | null>(null);
   const [dialogueIndex, setDialogueIndex] = useState(0);
   const [npcDialogueStates, setNpcDialogueStates] = useState<
@@ -70,6 +72,7 @@ export default function Dialogue() {
       const timer = setTimeout(() => {
         setSelectedNpc(null);
         setShouldAutoClose(false);
+        setDialogueActive(false);
       }, 300);
       return () => clearTimeout(timer);
     }
@@ -139,6 +142,7 @@ export default function Dialogue() {
     if (nextNode) {
       // New dialogue available — start it
       setShouldAutoClose(false);
+      setDialogueActive(true);
       setNpcDialogueStates((prev) => ({
         ...prev,
         [npc.id]: {
@@ -151,6 +155,7 @@ export default function Dialogue() {
     } else {
       // No new dialogue — show history replay
       setShouldAutoClose(false);
+      setDialogueActive(false);
       const storeHistory = progress?.history ?? [];
       setNpcDialogueStates((prev) => {
         const prevState = prev[npc.id];
@@ -175,7 +180,10 @@ export default function Dialogue() {
             <div className="dialogue-left">
               <button
                 className="close-dialogue"
-                onClick={() => setSelectedNpc(null)}
+                onClick={() => {
+                  setSelectedNpc(null);
+                  setDialogueActive(false);
+                }}
               >
                 Close Dialogue
               </button>
@@ -266,6 +274,7 @@ export default function Dialogue() {
               key={npc.id}
               className={`npc-portrait ${isSelected ? "npc-portrait--selected" : ""} ${isShaking ? "npc-portrait--shake" : ""} ${hasNew ? "npc-portrait--new" : ""}`}
               title={npc.name}
+              disabled={isDialogueActive && !isSelected}
               onClick={() => handlePortraitClick(npc, isUnlocked)}
             >
               <img

@@ -11,9 +11,10 @@ function GatherButton({ resourceId }: { resourceId: string }) {
     const amount = useGameStore((s) => s.resources[resourceId]);
     const cd = useGameStore((s) => s.cooldowns[resourceId] ?? 0);
     const gather = useGameStore((s) => s.gather);
+    const isDialogueActive = useGameStore((s) => s.isDialogueActive);
 
     const atCap = amount >= def.cap;
-    const disabled = cd > 0 || atCap;
+    const disabled = isDialogueActive || cd > 0 || atCap;
 
     return (
         <button className="action-btn" onClick={() => gather(resourceId)} disabled={disabled}>
@@ -34,9 +35,10 @@ function CraftButton({ recipe }: { recipe: RecipeDef }) {
         return s.resources[recipe.output.resId] + recipe.output.amnt > outputDef.cap;
     });
     const craft = useGameStore((s) => s.craft);
+    const isDialogueActive = useGameStore((s) => s.isDialogueActive);
 
     const outputDef = RESOURCES[recipe.output.resId];
-    const disabled = !canAfford || atCap;
+    const disabled = isDialogueActive || !canAfford || atCap;
 
     const costLabel = recipe.inputs
         .map(({ resId, amnt }) => `${amnt} ${RESOURCES[resId].label}`)
