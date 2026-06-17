@@ -238,13 +238,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     const currentCount = purchasedUpgrades[upgradeId] || 0;
     if (currentCount >= upgrade.maxPurchases) return;
 
-    const canAfford = upgrade.cost.every(
+    const cost = upgrade.cost(currentCount);
+    const canAfford = cost.every(
       ({ resId, amnt }) => resources[resId] >= amnt,
     );
     if (!canAfford) return;
 
     const nextResources = { ...resources };
-    for (const { resId, amnt } of upgrade.cost) {
+    for (const { resId, amnt } of cost) {
       nextResources[resId] -= amnt;
     }
 

@@ -18,7 +18,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
         cap: 50,
         category: "base",
         gatherAmt: 5,
-        gatherCd: 3,
+        gatherCd: 5,
     },
     "blazer-wood": {
         id: "blazer-wood",
@@ -26,7 +26,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
         cap: 50,
         category: "base",
         gatherAmt: 5,
-        gatherCd: 3,
+        gatherCd: 5,
     },
     rubber: {
         id: "rubber",
@@ -34,7 +34,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
         cap: 50,
         category: "base",
         gatherAmt: 5,
-        gatherCd: 3,
+        gatherCd: 5,
     },
     gear: {
         id: "gear",

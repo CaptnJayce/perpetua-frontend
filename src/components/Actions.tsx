@@ -2,7 +2,7 @@ import "./Actions.css";
 import { useGameStore } from "../store";
 import { RESOURCES } from "../data/resources";
 import { RECIPES } from "../data/recipes";
-import { UPGRADES } from "../data/upgrades";
+import { UPGRADES, getEffectiveCap, getEffectiveCraftCost } from "../data/upgrades";
 import type { RecipeDef } from "../data/recipes";
 
 const gatherables = Object.values(RESOURCES).filter((r) => r.gatherAmt !== undefined);
@@ -13,8 +13,10 @@ function GatherButton({ resourceId }: { resourceId: string }) {
     const cd = useGameStore((s) => s.cooldowns[resourceId] ?? 0);
     const gather = useGameStore((s) => s.gather);
     const isDialogueActive = useGameStore((s) => s.isDialogueActive);
+    const purchasedUpgrades = useGameStore((s) => s.purchasedUpgrades);
+    const effectiveCap = getEffectiveCap(resourceId, def.cap, purchasedUpgrades);
 
-    const atCap = amount >= def.cap;
+    const atCap = amount >= effectiveCap;
     const disabled = isDialogueActive || cd > 0 || atCap;
 
     return (
@@ -27,20 +29,26 @@ function GatherButton({ resourceId }: { resourceId: string }) {
 }
 
 function CraftButton({ recipe }: { recipe: RecipeDef }) {
-    const canAfford = useGameStore((s) =>
-        recipe.inputs.every(({ resId, amnt }) => s.resources[resId] >= amnt),
-    );
-    const atCap = useGameStore((s) => {
-        const outputDef = RESOURCES[recipe.output.resId];
-        return s.resources[recipe.output.resId] + recipe.output.amnt > outputDef.cap;
-    });
+    const resources = useGameStore((s) => s.resources);
     const craft = useGameStore((s) => s.craft);
     const isDialogueActive = useGameStore((s) => s.isDialogueActive);
+    const purchasedUpgrades = useGameStore((s) => s.purchasedUpgrades);
 
     const outputDef = RESOURCES[recipe.output.resId];
+    const effectiveCap = getEffectiveCap(recipe.output.resId, outputDef.cap, purchasedUpgrades);
+
+    const effectiveInputs = recipe.inputs.map(({ resId, amnt }) => ({
+        resId,
+        amnt: getEffectiveCraftCost(amnt, purchasedUpgrades),
+    }));
+
+    const canAfford = effectiveInputs.every(
+        ({ resId, amnt }) => resources[resId] >= amnt,
+    );
+    const atCap = resources[recipe.output.resId] + recipe.output.amnt > effectiveCap;
     const disabled = isDialogueActive || !canAfford || atCap;
 
-    const costLabel = recipe.inputs
+    const costLabel = effectiveInputs
         .map(({ resId, amnt }) => `${amnt} ${RESOURCES[resId].label}`)
         .join(", ");
 
@@ -61,10 +69,11 @@ function UpgradeButton({ upgradeId }: { upgradeId: string }) {
 
     const currentCount = purchasedUpgrades[upgradeId] || 0;
     const maxed = currentCount >= upgrade.maxPurchases;
-    const canAfford = upgrade.cost.every(({ resId, amnt }) => resources[resId] >= amnt);
+    const cost = upgrade.cost(currentCount);
+    const canAfford = cost.every(({ resId, amnt }) => resources[resId] >= amnt);
     const disabled = isDialogueActive || maxed || !canAfford;
 
-    const costLabel = upgrade.cost
+    const costLabel = cost
         .map(({ resId, amnt }) => `${amnt} ${RESOURCES[resId].label}`)
         .join(", ");
 

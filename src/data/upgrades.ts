@@ -9,7 +9,7 @@ export interface UpgradeDef {
     id: string;
     label: string;
     description: string;
-    cost: { resId: string; amnt: number }[];
+    cost: (level: number) => { resId: string; amnt: number }[];
     maxPurchases: number;
     effects: UpgradeEffect[];
 }
@@ -19,7 +19,7 @@ export const UPGRADES: Record<string, UpgradeDef> = {
         id: "expand-metal-storage",
         label: "Expand Metal Storage",
         description: "Increases Template Metal storage capacity by 25",
-        cost: [{ resId: "gear", amnt: 5 }],
+        cost: (level) => [{ resId: "gear", amnt: 4 * Math.pow(2, level) }],
         maxPurchases: 5,
         effects: [{ type: "storage", target: "tmp", bonus: 25 }],
     },
@@ -27,25 +27,25 @@ export const UPGRADES: Record<string, UpgradeDef> = {
         id: "expand-wood-storage",
         label: "Expand Wood Storage",
         description: "Increases Blazer Wood storage capacity by 25",
-        cost: [{ resId: "gear", amnt: 5 }],
+        cost: (level) => [{ resId: "gear", amnt: 4 * Math.pow(2, level) }],
         maxPurchases: 5,
         effects: [{ type: "storage", target: "blazer-wood", bonus: 25 }],
     },
     "faster-gathering": {
         id: "faster-gathering",
         label: "Faster Gathering",
-        description: "Reduces all gather cooldowns by 10%",
-        cost: [{ resId: "template-fittings", amnt: 3 }],
-        maxPurchases: 3,
-        effects: [{ type: "cooldownSpeed", multiplier: 0.9 }],
+        description: "Reduces all gather cooldowns by 20%",
+        cost: (level) => [{ resId: "template-fittings", amnt: 16 * Math.pow(2, level) }],
+        maxPurchases: 5,
+        effects: [{ type: "cooldownSpeed", multiplier: 0.8 }],
     },
     "efficient-crafting": {
         id: "efficient-crafting",
         label: "Efficient Crafting",
-        description: "Reduces all craft costs by 10%",
-        cost: [{ resId: "vacuum-tubes", amnt: 3 }],
-        maxPurchases: 3,
-        effects: [{ type: "craftCost", multiplier: 0.9 }],
+        description: "Reduces all craft costs by 15%",
+        cost: (level) => [{ resId: "vacuum-tubes", amnt: 128 * Math.pow(2, level) }],
+        maxPurchases: 5,
+        effects: [{ type: "craftCost", multiplier: 0.85 }],
     },
 };
 
