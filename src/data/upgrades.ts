@@ -34,18 +34,18 @@ export const UPGRADES: Record<string, UpgradeDef> = {
     "faster-gathering": {
         id: "faster-gathering",
         label: "Faster Gathering",
-        description: "Reduces all gather cooldowns by 20%",
+        description: "Reduces all gather cooldowns by 25%",
         cost: (level) => [{ resId: "template-fittings", amnt: 16 * Math.pow(2, level) }],
-        maxPurchases: 5,
-        effects: [{ type: "cooldownSpeed", multiplier: 0.8 }],
+        maxPurchases: 3,
+        effects: [{ type: "cooldownSpeed", multiplier: 0.75 }],
     },
     "efficient-crafting": {
         id: "efficient-crafting",
         label: "Efficient Crafting",
-        description: "Reduces all craft costs by 15%",
+        description: "Reduces all craft costs by 20%",
         cost: (level) => [{ resId: "vacuum-tubes", amnt: 128 * Math.pow(2, level) }],
-        maxPurchases: 5,
-        effects: [{ type: "craftCost", multiplier: 0.85 }],
+        maxPurchases: 3,
+        effects: [{ type: "craftCost", multiplier: 0.8 }],
     },
 };
 
