@@ -14,15 +14,6 @@ export const RECIPES: Record<string, RecipeDef> = {
         output: { resId: "gear", amnt: 1 },
     },
 
-    craftGearFive: {
-        id: "craftGearFive",
-        inputs: [
-            { resId: "tmp", amnt: 10 },
-            { resId: "blazer-wood", amnt: 5 },
-        ],
-        output: { resId: "gear", amnt: 5 },
-    },
-
     craftTemplateFittings: {
         id: "craftTemplateFittings",
         inputs: [
