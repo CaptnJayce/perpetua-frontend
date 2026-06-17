@@ -222,8 +222,18 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   toggleDebugMode: () => {
-    const { debugMode } = get();
-    set({ debugMode: !debugMode });
+    const { debugMode, resources, purchasedUpgrades } = get();
+    const nextDebugMode = !debugMode;
+
+    if (nextDebugMode) {
+      const maxedResources = { ...resources };
+      for (const def of Object.values(RESOURCES)) {
+        maxedResources[def.id] = getEffectiveCap(def.id, def.cap, purchasedUpgrades);
+      }
+      set({ debugMode: true, resources: maxedResources });
+    } else {
+      set({ debugMode: false });
+    }
   },
 
   setDialogueActive: (active) => {
