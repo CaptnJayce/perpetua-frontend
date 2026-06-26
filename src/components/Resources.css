@@ -22,7 +22,6 @@
 .milestone-heading {
   margin-top: 16px;
   padding-top: 8px;
-  border-top: 1px solid var(--brass);
   color: var(--brass);
   font-size: 14px;
   text-transform: uppercase;
