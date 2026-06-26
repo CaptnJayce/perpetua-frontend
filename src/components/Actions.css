@@ -14,7 +14,7 @@
 .action-btn {
   position: relative;
   overflow: hidden;
-  border-image: url("../assets/button.png") 10 fill;
+  border-image: url("../../assets/button.png") 10 fill;
   color: var(--iron);
   background: none;
   flex: 0 1 auto;
