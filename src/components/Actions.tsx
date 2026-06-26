@@ -14,16 +14,32 @@ function GatherButton({ resourceId }: { resourceId: string }) {
   const gather = useGameStore((s) => s.gather);
   const isDialogueActive = useGameStore((s) => s.isDialogueActive);
   const purchasedUpgrades = useGameStore((s) => s.purchasedUpgrades);
+
   const effectiveCap = getEffectiveCap(resourceId, def.cap, purchasedUpgrades);
 
   const atCap = amount >= effectiveCap;
   const disabled = isDialogueActive || cd > 0 || atCap;
 
+  const cooldownDuration = def.gatherCd ?? 1;
+  const progress = Math.max(0, Math.min(1, cd / cooldownDuration));
+
   return (
-    <button className="action-btn" onClick={() => gather(resourceId)} disabled={disabled}>
-      {def.label} +{def.gatherAmt}
-      {cd > 0 && <span className="cooldown"> ({cd.toFixed(1)}s)</span>}
-      {atCap && <span className="at-cap"> (full)</span>}
+    <button
+      className="action-btn"
+      onClick={() => gather(resourceId)}
+      disabled={disabled}
+    >
+      {cd > 0 && (
+        <div
+          className="cooldown-overlay"
+          style={{
+            transform: `scaleY(${progress})`,
+          }}
+        />
+      )}
+      <span className="btn-content">
+        {def.label} + {def.gatherAmt}
+      </span>
     </button>
   );
 }
@@ -35,6 +51,11 @@ function CraftButton({ recipe }: { recipe: RecipeDef }) {
   const purchasedUpgrades = useGameStore((s) => s.purchasedUpgrades);
 
   const outputDef = RESOURCES[recipe.output.resId];
+  if (!outputDef) {
+    console.warn(`CraftButton: unknown resource id "${recipe.output.resId}" in recipe "${recipe.id}"`);
+    return null;
+  }
+
   const effectiveCap = getEffectiveCap(recipe.output.resId, outputDef.cap, purchasedUpgrades);
 
   const effectiveInputs = recipe.inputs.map(({ resId, amnt }) => ({

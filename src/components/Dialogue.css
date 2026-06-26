@@ -46,13 +46,13 @@
 }
 
 .dialogue-bubble {
-  border-image: url("/dialogue-box.png") 14 fill repeat;
+  border-image: url("../../assets/dialogue-box.png") 16 fill;
   color: var(--iron);
   border-width: 16px;
   border-style: solid;
   image-rendering: pixelated;
   background: transparent;
-  padding: 16px;
+  padding: 4px;
   font-size: 16px;
 }
 

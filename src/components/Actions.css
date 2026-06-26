@@ -12,15 +12,18 @@
 }
 
 .action-btn {
-  border-image: url("/button.png") 12 fill repeat;
+  position: relative;
+  overflow: hidden;
+  border-image: url("../assets/button.png") 10 fill;
   color: var(--iron);
   background: none;
   flex: 0 1 auto;
-  border-width: 16px;
+  border-width: 10px;
   image-rendering: pixelated;
-  padding: 0 8px 0 8px;
+  padding: 0 2px 0 2px;
+  margin-top: 4px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 12px;
   transition: transform 60ms ease-in;
 }
 
@@ -36,6 +39,20 @@
 .action-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.btn-content {
+  position: relative;
+  z-index: 2;
+}
+
+.cooldown-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(80, 80, 80, 0.65);
+  transform-origin: bottom;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .upgrade-btn {
