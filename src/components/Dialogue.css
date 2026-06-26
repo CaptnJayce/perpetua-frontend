@@ -12,11 +12,20 @@
   flex-direction: row;
 }
 
+.dialogue-top {
+  flex: 40%;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .dialogue-left {
   flex: 40%;
   padding: 16px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 12px;
 }
 
@@ -37,16 +46,14 @@
 }
 
 .dialogue-bubble {
-  background: var(--parchment);
+  border-image: url("../../assets/dialogue-box.png") 16 fill;
   color: var(--iron);
-  border-radius: 12px;
-  padding: 16px;
-  font-size: 14px;
-  line-height: 1.5;
-  min-height: 120px;
-  flex-grow: 1;
-  display: flex;
-  align-items: flex-start;
+  border-width: 16px;
+  border-style: solid;
+  image-rendering: pixelated;
+  background: transparent;
+  padding: 4px;
+  font-size: 16px;
 }
 
 .dialogue-nav {

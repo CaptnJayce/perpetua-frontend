@@ -191,36 +191,37 @@ export default function Dialogue() {
         {fullNpc && (
           <>
             <div className="dialogue-left">
-              <button
-                className="close-dialogue"
-                onClick={() => {
-                  setSelectedNpc(null);
-                  setDialogueActive(false);
-                }}
-              >
-                Close Dialogue
-              </button>
+              <div className="dialogue-top">
+                <button
+                  className="close-dialogue"
+                  onClick={() => {
+                    setSelectedNpc(null);
+                    setDialogueActive(false);
+                  }}
+                >
+                  Close Dialogue
+                </button>
 
-              <h2 className="npc-name">{fullNpc.name}</h2>
-
-              <div className="dialogue-bubble">
-                {isComplete && history.length > 0 ? (
-                  <div className="dialogue-history">
-                    <p className="history-npc-text">
-                      {history[dialogueIndex]?.npcText}
+                <h2 className="npc-name">{fullNpc.name}</h2>
+                <div className="dialogue-bubble">
+                  {isComplete && history.length > 0 ? (
+                    <div className="dialogue-history">
+                      <p className="history-npc-text">
+                        {history[dialogueIndex]?.npcText}
+                      </p>
+                      <p className="history-player-response">
+                        You: {history[dialogueIndex]?.playerResponse}
+                      </p>
+                    </div>
+                  ) : (
+                    <p>
+                      {currentNode?.requireFlag &&
+                        !flags.includes(currentNode.requireFlag)
+                        ? fullNpc.description
+                        : currentNode?.text ?? fullNpc.description}
                     </p>
-                    <p className="history-player-response">
-                      You: {history[dialogueIndex]?.playerResponse}
-                    </p>
-                  </div>
-                ) : (
-                  <p>
-                    {currentNode?.requireFlag &&
-                    !flags.includes(currentNode.requireFlag)
-                      ? fullNpc.description
-                      : currentNode?.text ?? fullNpc.description}
-                  </p>
-                )}
+                  )}
+                </div>
               </div>
 
               {!isComplete && currentNode?.options && (
@@ -301,6 +302,6 @@ export default function Dialogue() {
           );
         })}
       </div>
-    </div>
+    </div >
   );
 }

@@ -1,7 +1,12 @@
 import { create } from "zustand";
 import { RESOURCES } from "./data/resources";
 import { RECIPES } from "./data/recipes";
-import { UPGRADES, getEffectiveCap, getEffectiveCooldown, getEffectiveCraftCost } from "./data/upgrades";
+import {
+  UPGRADES,
+  getEffectiveCap,
+  getEffectiveCooldown,
+  getEffectiveCraftCost,
+} from "./data/upgrades";
 import { checkUnlocks } from "./systems/unlocker";
 
 interface UnlockEvent {
@@ -30,7 +35,10 @@ interface GameState {
   craft: (recipeId: string) => void;
   setFlag: (flag: string) => void;
   completeDialogueNode: (npcId: string, nodeId: string) => void;
-  addDialogueHistory: (npcId: string, entry: { nodeId: string; npcText: string; playerResponse: string }) => void;
+  addDialogueHistory: (
+    npcId: string,
+    entry: { nodeId: string; npcText: string; playerResponse: string },
+  ) => void;
   toggleDebugMode: () => void;
   setDialogueActive: (active: boolean) => void;
   purchaseUpgrade: (upgradeId: string) => void;
@@ -66,7 +74,10 @@ function withUnlocks(
 }
 
 const CONDITIONAL_FLAGS = [
-  { flag: "completed_tutorial", condition: (r: Record<string, number>) => r.tmp >= 50 },
+  {
+    flag: "completed_tutorial",
+    condition: (r: Record<string, number>) => r.tmp >= 50,
+  },
 ];
 
 function checkFlags(
@@ -85,9 +96,7 @@ export { type GameState };
 export const useGameStore = create<GameState>((set, get) => ({
   resources: initialResources,
   cooldowns: initialCooldowns,
-  unlockedNpcs: [
-    { id: "mantle-of-logic", name: "Mantle of Logic" },
-  ],
+  unlockedNpcs: [{ id: "mantle-of-logic", name: "Mantle of Logic" }],
   unlockedRecipes: [],
   flags: [],
   npcDialogueProgress: {},
@@ -132,7 +141,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!def?.gatherAmt || !def?.gatherCd) return;
 
     const { resources, cooldowns, debugMode, purchasedUpgrades } = get();
-    const effectiveCap = getEffectiveCap(resourceId, def.cap, purchasedUpgrades);
+    const effectiveCap = getEffectiveCap(
+      resourceId,
+      def.cap,
+      purchasedUpgrades,
+    );
     const effectiveCd = getEffectiveCooldown(def.gatherCd, purchasedUpgrades);
 
     if (!debugMode && cooldowns[resourceId] > 0) return;
@@ -141,7 +154,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     withUnlocks(get, set, {
       resources: {
         ...resources,
-        [resourceId]: Math.min(effectiveCap, resources[resourceId] + def.gatherAmt),
+        [resourceId]: Math.min(
+          effectiveCap,
+          resources[resourceId] + def.gatherAmt,
+        ),
       },
       cooldowns: debugMode
         ? { ...cooldowns }
@@ -155,7 +171,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const { resources, purchasedUpgrades } = get();
     const outputDef = RESOURCES[recipe.output.resId];
-    const effectiveCap = getEffectiveCap(recipe.output.resId, outputDef.cap, purchasedUpgrades);
+    const effectiveCap = getEffectiveCap(
+      recipe.output.resId,
+      outputDef.cap,
+      purchasedUpgrades,
+    );
 
     const effectiveInputs = recipe.inputs.map(({ resId, amnt }) => ({
       resId,
@@ -165,7 +185,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     const canCraft = effectiveInputs.every(
       ({ resId, amnt }) => resources[resId] >= amnt,
     );
-    const atCap = resources[recipe.output.resId] + recipe.output.amnt > effectiveCap;
+    const atCap =
+      resources[recipe.output.resId] + recipe.output.amnt > effectiveCap;
 
     if (!canCraft || atCap) return;
 
@@ -193,7 +214,10 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   completeDialogueNode: (npcId, nodeId) => {
     const { npcDialogueProgress } = get();
-    const prev = npcDialogueProgress[npcId] || { completedNodeIds: [], history: [] };
+    const prev = npcDialogueProgress[npcId] || {
+      completedNodeIds: [],
+      history: [],
+    };
     if (!prev.completedNodeIds.includes(nodeId)) {
       set({
         npcDialogueProgress: {
@@ -209,7 +233,10 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   addDialogueHistory: (npcId, entry) => {
     const { npcDialogueProgress } = get();
-    const prev = npcDialogueProgress[npcId] || { completedNodeIds: [], history: [] };
+    const prev = npcDialogueProgress[npcId] || {
+      completedNodeIds: [],
+      history: [],
+    };
     set({
       npcDialogueProgress: {
         ...npcDialogueProgress,
@@ -222,8 +249,22 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   toggleDebugMode: () => {
-    const { debugMode } = get();
-    set({ debugMode: !debugMode });
+    const { debugMode, resources, purchasedUpgrades } = get();
+    const nextDebugMode = !debugMode;
+
+    if (nextDebugMode) {
+      const maxedResources = { ...resources };
+      for (const def of Object.values(RESOURCES)) {
+        maxedResources[def.id] = getEffectiveCap(
+          def.id,
+          def.cap,
+          purchasedUpgrades,
+        );
+      }
+      set({ debugMode: true, resources: maxedResources });
+    } else {
+      set({ debugMode: false });
+    }
   },
 
   setDialogueActive: (active) => {
@@ -238,13 +279,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     const currentCount = purchasedUpgrades[upgradeId] || 0;
     if (currentCount >= upgrade.maxPurchases) return;
 
-    const canAfford = upgrade.cost.every(
-      ({ resId, amnt }) => resources[resId] >= amnt,
-    );
+    const cost = upgrade.cost(currentCount);
+    const canAfford = cost.every(({ resId, amnt }) => resources[resId] >= amnt);
     if (!canAfford) return;
 
     const nextResources = { ...resources };
-    for (const { resId, amnt } of upgrade.cost) {
+    for (const { resId, amnt } of cost) {
       nextResources[resId] -= amnt;
     }
 
