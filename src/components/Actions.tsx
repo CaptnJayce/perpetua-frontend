@@ -91,6 +91,13 @@ function UpgradeButton({ upgradeId }: { upgradeId: string }) {
   const purchaseUpgrade = useGameStore((s) => s.purchaseUpgrade);
   const isDialogueActive = useGameStore((s) => s.isDialogueActive);
 
+  if (
+    upgrade.requiresUpgrade &&
+    !(purchasedUpgrades[upgrade.requiresUpgrade] > 0)
+  ) {
+    return null;
+  }
+
   const currentCount = purchasedUpgrades[upgradeId] || 0;
   const maxed = currentCount >= upgrade.maxPurchases;
   const cost = upgrade.cost(currentCount);

@@ -51,9 +51,9 @@ export const RECIPES: Record<string, RecipeDef> = {
   craftGenerator: {
     id: "craftGenerator",
     inputs: [
-      { resId: "gear", amnt: 90 },
-      { resId: "fittings", amnt: 30 },
-      { resId: "tmp", amnt: 50 },
+      { resId: "gear", amnt: 220 },
+      { resId: "fittings", amnt: 80 },
+      { resId: "tmp", amnt: 150 },
     ],
     output: { resId: "pkg", amnt: 1 },
   },
@@ -61,9 +61,9 @@ export const RECIPES: Record<string, RecipeDef> = {
   craftStorage: {
     id: "craftStorage",
     inputs: [
-      { resId: "beams", amnt: 90 },
-      { resId: "rubber", amnt: 50 },
-      { resId: "fittings", amnt: 30 },
+      { resId: "beams", amnt: 220 },
+      { resId: "rubber", amnt: 80 },
+      { resId: "fittings", amnt: 80 },
     ],
     output: { resId: "pks", amnt: 1 },
   },
