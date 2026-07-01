@@ -34,11 +34,13 @@ export const NPCS: NpcDef[] = [
   {
     id: "hexry",
     name: "Hexry",
-    description: "Your rival. No unlock condition yet.",
+    description: "Your rival.",
     portrait: "/portrait-placeholder.jpg",
     bodyShot: "/body-shot-portrait.png",
     unlocked: false,
-    unlockCondition: () => false,
+    unlockCondition: (_resources, flags) =>
+      flags.includes("unlock_worker_one") &&
+      flags.includes("gathering_crafting_upgraded"),
     role: "story",
   },
 ];

@@ -102,6 +102,10 @@ const CONDITIONAL_FLAGS: {
     flag: "generator_online",
     condition: (s) => s.resources.pkg >= 1 && s.resources.pks >= 1,
   },
+  {
+    flag: "gathering_crafting_upgraded",
+    condition: (s) => (s.purchasedUpgrades["unlock-efficiency-upgrades"] ?? 0) > 0,
+  },
 ];
 
 function checkFlags(
@@ -296,6 +300,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     const { resources, purchasedUpgrades } = get();
     const upgrade = UPGRADES[upgradeId];
     if (!upgrade) return;
+    if (
+      upgrade.requiresUpgrade &&
+      !(purchasedUpgrades[upgrade.requiresUpgrade] > 0)
+    ) {
+      return;
+    }
 
     const currentCount = purchasedUpgrades[upgradeId] || 0;
     if (currentCount >= upgrade.maxPurchases) return;
