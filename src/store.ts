@@ -1,13 +1,14 @@
 import { create } from "zustand";
 import { RESOURCES } from "./data/resources";
-import { RECIPES } from "./data/recipes";
-import {
-  UPGRADES,
-  getEffectiveCap,
-  getEffectiveCooldown,
-  getEffectiveCraftCost,
-} from "./data/upgrades";
+import { NPCS } from "./data/npcs";
+import { UPGRADES, getEffectiveCap, getEffectiveCooldown } from "./data/upgrades";
 import { checkUnlocks } from "./systems/unlocker";
+import { applyGather, applyCraft } from "./systems/production";
+import {
+  isValidAssignment,
+  tickWorkers,
+  type WorkerAssignment,
+} from "./systems/workers";
 
 interface UnlockEvent {
   id: string;
@@ -29,6 +30,8 @@ interface GameState {
   debugMode: boolean;
   isDialogueActive: boolean;
   purchasedUpgrades: Record<string, number>;
+  workerAssignments: Record<string, WorkerAssignment | null>;
+  workerCooldowns: Record<string, number>;
 
   tick: (delta: number) => void;
   gather: (resourceId: string) => void;
@@ -40,8 +43,10 @@ interface GameState {
     entry: { nodeId: string; npcText: string; playerResponse: string },
   ) => void;
   toggleDebugMode: () => void;
+  emptyResources: () => void;
   setDialogueActive: (active: boolean) => void;
   purchaseUpgrade: (upgradeId: string) => void;
+  assignWorker: (workerId: string, assignment: WorkerAssignment | null) => void;
 }
 
 const initialResources = Object.fromEntries(
@@ -56,6 +61,16 @@ const initialCooldowns = Object.fromEntries(
 
 const PASSIVE_RESOURCES = Object.values(RESOURCES).filter((d) => d.rate);
 
+function applyNpcUnlocks(
+  state: GameState,
+  set: (patch: Partial<GameState>) => void,
+) {
+  const newNpcs = checkUnlocks(state);
+  if (newNpcs.length) {
+    set({ unlockedNpcs: [...state.unlockedNpcs, ...newNpcs] });
+  }
+}
+
 function withUnlocks(
   get: () => GameState,
   set: (patch: Partial<GameState>) => void,
@@ -65,18 +80,31 @@ function withUnlocks(
   set(patch);
   const state = get();
   if (state.resources !== prevResources) {
-    const newNpcs = checkUnlocks(state);
-    if (newNpcs.length) {
-      set({ unlockedNpcs: [...state.unlockedNpcs, ...newNpcs] });
-    }
+    applyNpcUnlocks(state, set);
     checkFlags(state, set);
   }
 }
 
-const CONDITIONAL_FLAGS = [
+const CONDITIONAL_FLAGS: {
+  flag: string;
+  condition: (state: Pick<GameState, "resources" | "purchasedUpgrades">) => boolean;
+}[] = [
   {
-    flag: "completed_tutorial",
-    condition: (r: Record<string, number>) => r.tmp >= 50,
+    flag: "purchased_upgrade",
+    condition: (s) =>
+      Object.entries(s.purchasedUpgrades).some(
+        ([upgradeId, count]) =>
+          count > 0 &&
+          UPGRADES[upgradeId]?.effects.some((e) => e.type === "storage"),
+      ),
+  },
+  {
+    flag: "generator_online",
+    condition: (s) => s.resources.pkg >= 1 && s.resources.pks >= 1,
+  },
+  {
+    flag: "gathering_crafting_upgraded",
+    condition: (s) => (s.purchasedUpgrades["unlock-efficiency-upgrades"] ?? 0) > 0,
   },
 ];
 
@@ -85,7 +113,7 @@ function checkFlags(
   set: (patch: Partial<GameState>) => void,
 ) {
   for (const { flag, condition } of CONDITIONAL_FLAGS) {
-    if (!state.flags.includes(flag) && condition(state.resources)) {
+    if (!state.flags.includes(flag) && condition(state)) {
       set({ flags: [...state.flags, flag] });
     }
   }
@@ -103,16 +131,31 @@ export const useGameStore = create<GameState>((set, get) => ({
   debugMode: false,
   isDialogueActive: false,
   purchasedUpgrades: {},
+  workerAssignments: {},
+  workerCooldowns: {},
 
   tick: (delta) => {
-    const { resources, cooldowns } = get();
+    const {
+      resources,
+      cooldowns,
+      workerAssignments,
+      workerCooldowns,
+      unlockedNpcs,
+      purchasedUpgrades,
+      flags,
+    } = get();
     const update: Partial<GameState> = {};
     let dirty = false;
 
-    const anyBelowCap = PASSIVE_RESOURCES.some((d) => resources[d.id] < d.cap);
+    const activePassiveResources = PASSIVE_RESOURCES.filter(
+      (d) => !d.requireFlag || flags.includes(d.requireFlag),
+    );
+    const anyBelowCap = activePassiveResources.some(
+      (d) => resources[d.id] < d.cap,
+    );
     if (anyBelowCap) {
       const nextResources = { ...resources };
-      for (const def of PASSIVE_RESOURCES) {
+      for (const def of activePassiveResources) {
         nextResources[def.id] = Math.min(
           def.cap,
           nextResources[def.id] + def.rate! * delta,
@@ -133,6 +176,23 @@ export const useGameStore = create<GameState>((set, get) => ({
       dirty = true;
     }
 
+    const hasActiveWorkers = Object.values(workerAssignments).some(Boolean);
+    if (hasActiveWorkers) {
+      const result = tickWorkers({
+        workerAssignments,
+        workerCooldowns,
+        unlockedWorkerIds: unlockedNpcs.map((n) => n.id),
+        resources: update.resources ?? resources,
+        purchasedUpgrades,
+        delta,
+      });
+      if (result.changed) {
+        update.resources = result.resources;
+        update.workerCooldowns = result.workerCooldowns;
+        dirty = true;
+      }
+    }
+
     if (dirty) withUnlocks(get, set, update);
   },
 
@@ -141,24 +201,15 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!def?.gatherAmt || !def?.gatherCd) return;
 
     const { resources, cooldowns, debugMode, purchasedUpgrades } = get();
-    const effectiveCap = getEffectiveCap(
-      resourceId,
-      def.cap,
-      purchasedUpgrades,
-    );
     const effectiveCd = getEffectiveCooldown(def.gatherCd, purchasedUpgrades);
 
     if (!debugMode && cooldowns[resourceId] > 0) return;
-    if (resources[resourceId] >= effectiveCap) return;
+
+    const nextResources = applyGather(resources, resourceId, purchasedUpgrades);
+    if (!nextResources) return;
 
     withUnlocks(get, set, {
-      resources: {
-        ...resources,
-        [resourceId]: Math.min(
-          effectiveCap,
-          resources[resourceId] + def.gatherAmt,
-        ),
-      },
+      resources: nextResources,
       cooldowns: debugMode
         ? { ...cooldowns }
         : { ...cooldowns, [resourceId]: effectiveCd },
@@ -166,35 +217,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   craft: (recipeId) => {
-    const recipe = RECIPES[recipeId];
-    if (!recipe) return;
-
     const { resources, purchasedUpgrades } = get();
-    const outputDef = RESOURCES[recipe.output.resId];
-    const effectiveCap = getEffectiveCap(
-      recipe.output.resId,
-      outputDef.cap,
-      purchasedUpgrades,
-    );
-
-    const effectiveInputs = recipe.inputs.map(({ resId, amnt }) => ({
-      resId,
-      amnt: getEffectiveCraftCost(amnt, purchasedUpgrades),
-    }));
-
-    const canCraft = effectiveInputs.every(
-      ({ resId, amnt }) => resources[resId] >= amnt,
-    );
-    const atCap =
-      resources[recipe.output.resId] + recipe.output.amnt > effectiveCap;
-
-    if (!canCraft || atCap) return;
-
-    const nextResources = { ...resources };
-    for (const { resId, amnt } of effectiveInputs) {
-      nextResources[resId] -= amnt;
-    }
-    nextResources[recipe.output.resId] += recipe.output.amnt;
+    const nextResources = applyCraft(resources, recipeId, purchasedUpgrades);
+    if (!nextResources) return;
 
     withUnlocks(get, set, { resources: nextResources });
   },
@@ -202,13 +227,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   setFlag: (flag) => {
     const { flags } = get();
     if (!flags.includes(flag)) {
-      const nextFlags = [...flags, flag];
-      set({ flags: nextFlags });
-      const state = get();
-      const newNpcs = checkUnlocks(state);
-      if (newNpcs.length) {
-        set({ unlockedNpcs: [...state.unlockedNpcs, ...newNpcs] });
-      }
+      set({ flags: [...flags, flag] });
+      applyNpcUnlocks(get(), set);
     }
   },
 
@@ -267,6 +287,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
+  emptyResources: () => {
+    if (!get().debugMode) return;
+    set({ resources: { ...initialResources } });
+  },
+
   setDialogueActive: (active) => {
     set({ isDialogueActive: active });
   },
@@ -275,6 +300,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     const { resources, purchasedUpgrades } = get();
     const upgrade = UPGRADES[upgradeId];
     if (!upgrade) return;
+    if (
+      upgrade.requiresUpgrade &&
+      !(purchasedUpgrades[upgrade.requiresUpgrade] > 0)
+    ) {
+      return;
+    }
 
     const currentCount = purchasedUpgrades[upgradeId] || 0;
     if (currentCount >= upgrade.maxPurchases) return;
@@ -288,12 +319,25 @@ export const useGameStore = create<GameState>((set, get) => ({
       nextResources[resId] -= amnt;
     }
 
-    set({
+    withUnlocks(get, set, {
       resources: nextResources,
       purchasedUpgrades: {
         ...purchasedUpgrades,
         [upgradeId]: currentCount + 1,
       },
+    });
+  },
+
+  assignWorker: (workerId, assignment) => {
+    const { unlockedNpcs, workerAssignments, workerCooldowns } = get();
+    const npc = NPCS.find((n) => n.id === workerId);
+    if (!npc || npc.role !== "worker") return;
+    if (!unlockedNpcs.some((u) => u.id === workerId)) return;
+    if (assignment && !isValidAssignment(assignment)) return;
+
+    set({
+      workerAssignments: { ...workerAssignments, [workerId]: assignment },
+      workerCooldowns: { ...workerCooldowns, [workerId]: 0 },
     });
   },
 }));

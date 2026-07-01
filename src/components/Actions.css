@@ -86,3 +86,21 @@
   color: var(--brass);
   font-size: 12px;
 }
+
+.worker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.worker-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  color: var(--iron);
+}
+
+.worker-select {
+  font-size: 12px;
+}

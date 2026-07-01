@@ -4,9 +4,9 @@ export interface NpcDef {
   description: string;
   portrait: string;
   bodyShot: string;
-  unlockCondition: (resources: Record<string, number>) => boolean;
-  requireFlag?: string;
+  unlockCondition: (resources: Record<string, number>, flags: string[]) => boolean;
   unlocked: boolean;
+  role: "story" | "worker";
 }
 
 export const NPCS: NpcDef[] = [
@@ -19,25 +19,29 @@ export const NPCS: NpcDef[] = [
     bodyShot: "/body-shot-portrait.png",
     unlocked: false,
     unlockCondition: () => true,
+    role: "story",
   },
   {
-    id: "worker-npc-1",
+    id: "worker-1",
     name: "Worker NPC 1/10",
     description: "Can be assigned to crafting and gathering.",
     portrait: "/portrait-placeholder.jpg",
     bodyShot: "/body-shot-portrait.png",
     unlocked: false,
-    unlockCondition: () => true,
-    requireFlag: "unlock_worker_one",
+    unlockCondition: (_resources, flags) => flags.includes("unlock_worker_one"),
+    role: "worker",
   },
   {
     id: "hexry",
     name: "Hexry",
-    description: "Your rival. No unlock condition yet.",
+    description: "Your rival.",
     portrait: "/portrait-placeholder.jpg",
     bodyShot: "/body-shot-portrait.png",
     unlocked: false,
-    unlockCondition: () => false,
+    unlockCondition: (_resources, flags) =>
+      flags.includes("unlock_worker_one") &&
+      flags.includes("gathering_crafting_upgraded"),
+    role: "story",
   },
 ];
 

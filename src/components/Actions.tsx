@@ -2,8 +2,11 @@ import "./Actions.css";
 import { useGameStore } from "../store";
 import { RESOURCES } from "../data/resources";
 import { RECIPES } from "../data/recipes";
+import { NPCS } from "../data/npcs";
 import { UPGRADES, getEffectiveCap, getEffectiveCraftCost } from "../data/upgrades";
 import type { RecipeDef } from "../data/recipes";
+import type { NpcDef } from "../data/npcs";
+import type { WorkerAssignment } from "../systems/workers";
 
 const gatherables = Object.values(RESOURCES).filter((r) => r.gatherAmt !== undefined);
 
@@ -88,6 +91,13 @@ function UpgradeButton({ upgradeId }: { upgradeId: string }) {
   const purchaseUpgrade = useGameStore((s) => s.purchaseUpgrade);
   const isDialogueActive = useGameStore((s) => s.isDialogueActive);
 
+  if (
+    upgrade.requiresUpgrade &&
+    !(purchasedUpgrades[upgrade.requiresUpgrade] > 0)
+  ) {
+    return null;
+  }
+
   const currentCount = purchasedUpgrades[upgradeId] || 0;
   const maxed = currentCount >= upgrade.maxPurchases;
   const cost = upgrade.cost(currentCount);
@@ -107,7 +117,58 @@ function UpgradeButton({ upgradeId }: { upgradeId: string }) {
   );
 }
 
+function WorkerAssignmentRow({ npc }: { npc: NpcDef }) {
+  const assignment = useGameStore((s) => s.workerAssignments[npc.id] ?? null);
+  const assignWorker = useGameStore((s) => s.assignWorker);
+  const isDialogueActive = useGameStore((s) => s.isDialogueActive);
+
+  const value = assignment ? `${assignment.type}:${assignment.targetId}` : "";
+
+  function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const raw = e.target.value;
+    if (!raw) {
+      assignWorker(npc.id, null);
+      return;
+    }
+    const [type, targetId] = raw.split(":") as [WorkerAssignment["type"], string];
+    assignWorker(npc.id, { type, targetId });
+  }
+
+  return (
+    <div className="worker-row">
+      <span className="worker-name">{npc.name}</span>
+      <select
+        className="worker-select"
+        value={value}
+        onChange={handleChange}
+        disabled={isDialogueActive}
+      >
+        <option value="">Unassigned</option>
+        <optgroup label="Gather">
+          {gatherables.map((r) => (
+            <option key={r.id} value={`gather:${r.id}`}>
+              {r.label}
+            </option>
+          ))}
+        </optgroup>
+        <optgroup label="Craft">
+          {Object.values(RECIPES).map((recipe) => (
+            <option key={recipe.id} value={`craft:${recipe.id}`}>
+              {RESOURCES[recipe.output.resId]?.label ?? recipe.id}
+            </option>
+          ))}
+        </optgroup>
+      </select>
+    </div>
+  );
+}
+
 export default function Actions() {
+  const unlockedNpcs = useGameStore((s) => s.unlockedNpcs);
+  const unlockedWorkers = NPCS.filter(
+    (npc) => npc.role === "worker" && unlockedNpcs.some((u) => u.id === npc.id),
+  );
+
   return (
     <div className="actions">
       <h2>Actions</h2>
@@ -129,6 +190,17 @@ export default function Actions() {
           ))}
         </div>
       </section>
+
+      {unlockedWorkers.length > 0 && (
+        <section>
+          <h3>Workers</h3>
+          <div className="worker-list">
+            {unlockedWorkers.map((npc) => (
+              <WorkerAssignmentRow key={npc.id} npc={npc} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section>
         <h3>Upgrades</h3>
