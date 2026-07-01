@@ -43,6 +43,7 @@ interface GameState {
     entry: { nodeId: string; npcText: string; playerResponse: string },
   ) => void;
   toggleDebugMode: () => void;
+  emptyResources: () => void;
   setDialogueActive: (active: boolean) => void;
   purchaseUpgrade: (upgradeId: string) => void;
   assignWorker: (workerId: string, assignment: WorkerAssignment | null) => void;
@@ -84,10 +85,22 @@ function withUnlocks(
   }
 }
 
-const CONDITIONAL_FLAGS = [
+const CONDITIONAL_FLAGS: {
+  flag: string;
+  condition: (state: Pick<GameState, "resources" | "purchasedUpgrades">) => boolean;
+}[] = [
   {
-    flag: "completed_tutorial",
-    condition: (r: Record<string, number>) => r.tmp >= 25,
+    flag: "purchased_upgrade",
+    condition: (s) =>
+      Object.entries(s.purchasedUpgrades).some(
+        ([upgradeId, count]) =>
+          count > 0 &&
+          UPGRADES[upgradeId]?.effects.some((e) => e.type === "storage"),
+      ),
+  },
+  {
+    flag: "generator_online",
+    condition: (s) => s.resources.pkg >= 1 && s.resources.pks >= 1,
   },
 ];
 
@@ -96,7 +109,7 @@ function checkFlags(
   set: (patch: Partial<GameState>) => void,
 ) {
   for (const { flag, condition } of CONDITIONAL_FLAGS) {
-    if (!state.flags.includes(flag) && condition(state.resources)) {
+    if (!state.flags.includes(flag) && condition(state)) {
       set({ flags: [...state.flags, flag] });
     }
   }
@@ -125,14 +138,20 @@ export const useGameStore = create<GameState>((set, get) => ({
       workerCooldowns,
       unlockedNpcs,
       purchasedUpgrades,
+      flags,
     } = get();
     const update: Partial<GameState> = {};
     let dirty = false;
 
-    const anyBelowCap = PASSIVE_RESOURCES.some((d) => resources[d.id] < d.cap);
+    const activePassiveResources = PASSIVE_RESOURCES.filter(
+      (d) => !d.requireFlag || flags.includes(d.requireFlag),
+    );
+    const anyBelowCap = activePassiveResources.some(
+      (d) => resources[d.id] < d.cap,
+    );
     if (anyBelowCap) {
       const nextResources = { ...resources };
-      for (const def of PASSIVE_RESOURCES) {
+      for (const def of activePassiveResources) {
         nextResources[def.id] = Math.min(
           def.cap,
           nextResources[def.id] + def.rate! * delta,
@@ -264,6 +283,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
+  emptyResources: () => {
+    if (!get().debugMode) return;
+    set({ resources: { ...initialResources } });
+  },
+
   setDialogueActive: (active) => {
     set({ isDialogueActive: active });
   },
@@ -285,7 +309,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       nextResources[resId] -= amnt;
     }
 
-    set({
+    withUnlocks(get, set, {
       resources: nextResources,
       purchasedUpgrades: {
         ...purchasedUpgrades,

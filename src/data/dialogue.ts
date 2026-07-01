@@ -50,7 +50,7 @@ export const DIALOGUE_TREES: Record<string, DialogueTree> = {
       },
       worker_visit: {
         id: "worker_visit",
-        requireFlag: "completed_tutorial",
+        requireFlag: "purchased_upgrade",
         text: "Good progress so far! I've brought over one of Hexry's workers to help you get along, treat him well!",
         options: [
           { text: "Thank you", nextNodeId: "end", setFlag: "unlock_worker_one" },

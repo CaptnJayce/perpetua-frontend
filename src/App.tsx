@@ -10,6 +10,7 @@ import Actions from "./components/Actions";
 
 export default function App() {
     const toggleDebugMode = useGameStore((s) => s.toggleDebugMode);
+    const emptyResources = useGameStore((s) => s.emptyResources);
 
     useEffect(() => {
         const TICK_MS = 100;
@@ -24,13 +25,16 @@ export default function App() {
 
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
-            if (e.shiftKey && e.key === "D") {
+            if (!e.shiftKey) return;
+            if (e.key === "D") {
                 toggleDebugMode();
+            } else if (e.key === "E") {
+                emptyResources();
             }
         };
         document.addEventListener("keydown", handler);
         return () => document.removeEventListener("keydown", handler);
-    }, [toggleDebugMode]);
+    }, [toggleDebugMode, emptyResources]);
 
     return (
         <Group className="main" orientation="horizontal">

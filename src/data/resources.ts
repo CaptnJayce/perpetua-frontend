@@ -7,6 +7,7 @@ import blazerBeam from "../../assets/blazer_beam.png";
 
 export type ResourceCategory =
   | "base"
+  | "passive"
   | "crafted"
   | "worker"
   | "milestone"
@@ -22,9 +23,18 @@ export interface ResourceDef {
   gatherAmt?: number; // amount gained per gather press, if gatherable
   gatherCd?: number; // cooldown in seconds between gather presses
   icon?: string;
+  requireFlag?: string; // flag that must be set before this resource passively generates
 }
 
 export const RESOURCES: Record<string, ResourceDef> = {
+  energy: {
+    id: "energy",
+    label: "Perpetual Energy",
+    cap: 1000,
+    category: "passive",
+    rate: 1,
+    requireFlag: "generator_online",
+  },
   tmp: {
     id: "tmp",
     label: "Template Metal",
@@ -55,7 +65,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
   gear: {
     id: "gear",
     label: "Gear",
-    cap: 75,
+    cap: 50,
     category: "crafted",
     displayAsInt: true,
     icon: gear,
@@ -63,7 +73,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
   fittings: {
     id: "fittings",
     label: "Template Fittings",
-    cap: 75,
+    cap: 50,
     category: "crafted",
     displayAsInt: true,
     icon: templateFitting,
@@ -71,10 +81,24 @@ export const RESOURCES: Record<string, ResourceDef> = {
   beams: {
     id: "beams",
     label: "Blazer Beams",
-    cap: 75,
+    cap: 50,
     category: "crafted",
     displayAsInt: true,
     icon: blazerBeam,
+  },
+  propeller: {
+    id: "propeller",
+    label: "Propeller",
+    cap: 50,
+    category: "crafted",
+    displayAsInt: true,
+  },
+  vent: {
+    id: "vent",
+    label: "Vent",
+    cap: 50,
+    category: "crafted",
+    displayAsInt: true,
   },
   workers: {
     id: "workers",

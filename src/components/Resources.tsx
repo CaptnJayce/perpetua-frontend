@@ -31,14 +31,19 @@ function ResourceRow({ def, resources, purchasedUpgrades }: ResourceRowProps) {
 export default function Resources() {
   const resources = useGameStore((s) => s.resources);
   const purchasedUpgrades = useGameStore((s) => s.purchasedUpgrades);
+  const flags = useGameStore((s) => s.flags);
 
-  const allResources = Object.values(RESOURCES);
+  const visibleResources = Object.values(RESOURCES).filter(
+    (def) => !def.requireFlag || flags.includes(def.requireFlag),
+  );
 
-  const baseResources = allResources.filter((def) => def.category === "base");
-  const craftedResources = allResources.filter((def) => def.category === "crafted");
-  const workers = allResources.filter((def) => def.category === "worker");
-  const milestoneResources = allResources.filter((def) => def.category === "milestone");
-  const questResources = allResources.filter((def) => def.category === "quest");
+  const baseResources = visibleResources.filter((def) => def.category === "base");
+  const passiveResources = visibleResources.filter(
+    (def) => def.category === "passive" || def.category === "worker",
+  );
+  const craftedResources = visibleResources.filter((def) => def.category === "crafted");
+  const milestoneResources = visibleResources.filter((def) => def.category === "milestone");
+  const questResources = visibleResources.filter((def) => def.category === "quest");
 
   return (
     <div className="resources">
@@ -52,10 +57,10 @@ export default function Resources() {
         />
       ))}
 
-      {craftedResources.length > 0 && (
+      {passiveResources.length > 0 && (
         <>
-          <h3>Crafted</h3>
-          {craftedResources.map((def) => (
+          <h3>Passive</h3>
+          {passiveResources.map((def) => (
             <ResourceRow
               key={def.id}
               def={def}
@@ -66,14 +71,16 @@ export default function Resources() {
         </>
       )}
 
-      {workers.length > 0 && (
+      {craftedResources.length > 0 && (
         <>
-          <h3>Workers</h3>
-          {workers.map((def) => (
-            <p key={def.id} className="resource-info">
-              <img src={def.icon} className="icon" /> {def.label}:{" "}
-              {Math.floor(resources[def.id])} / {def.cap}
-            </p>
+          <h3>Crafted</h3>
+          {craftedResources.map((def) => (
+            <ResourceRow
+              key={def.id}
+              def={def}
+              resources={resources}
+              purchasedUpgrades={purchasedUpgrades}
+            />
           ))}
         </>
       )}
