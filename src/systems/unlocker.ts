@@ -10,11 +10,8 @@ export function checkUnlocks(state: GameState): UnlockEvent[] {
   const newlyUnlocked: UnlockEvent[] = [];
   for (const npc of NPCS) {
     const alreadyUnlocked = state.unlockedNpcs.some((u) => u.id === npc.id);
-    if (!alreadyUnlocked && npc.unlockCondition(state.resources)) {
-      const flagMet = !npc.requireFlag || state.flags.includes(npc.requireFlag);
-      if (flagMet) {
-        newlyUnlocked.push({ id: npc.id, name: npc.name });
-      }
+    if (!alreadyUnlocked && npc.unlockCondition(state.resources, state.flags)) {
+      newlyUnlocked.push({ id: npc.id, name: npc.name });
     }
   }
   return newlyUnlocked;

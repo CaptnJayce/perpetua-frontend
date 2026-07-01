@@ -7,8 +7,8 @@ import blazerBeam from "../../assets/blazer_beam.png";
 
 export type ResourceCategory =
   | "base"
-  | "partial"
   | "crafted"
+  | "worker"
   | "milestone"
   | "quest";
 
@@ -56,7 +56,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
     id: "gear",
     label: "Gear",
     cap: 75,
-    category: "partial",
+    category: "crafted",
     displayAsInt: true,
     icon: gear,
   },
@@ -64,7 +64,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
     id: "fittings",
     label: "Template Fittings",
     cap: 75,
-    category: "partial",
+    category: "crafted",
     displayAsInt: true,
     icon: templateFitting,
   },
@@ -72,9 +72,16 @@ export const RESOURCES: Record<string, ResourceDef> = {
     id: "beams",
     label: "Blazer Beams",
     cap: 75,
-    category: "partial",
+    category: "crafted",
     displayAsInt: true,
     icon: blazerBeam,
+  },
+  workers: {
+    id: "workers",
+    label: "Workers",
+    cap: 10,
+    category: "worker",
+    displayAsInt: true,
   },
   pkg: {
     id: "pkg",
