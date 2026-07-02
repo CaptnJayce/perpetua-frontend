@@ -67,7 +67,14 @@ function applyNpcUnlocks(
 ) {
   const newNpcs = checkUnlocks(state);
   if (newNpcs.length) {
-    set({ unlockedNpcs: [...state.unlockedNpcs, ...newNpcs] });
+    const unlockedNpcs = [...state.unlockedNpcs, ...newNpcs];
+    const workerCount = unlockedNpcs.filter(
+      (u) => NPCS.find((n) => n.id === u.id)?.role === "worker",
+    ).length;
+    set({
+      unlockedNpcs,
+      resources: { ...state.resources, workers: workerCount },
+    });
   }
 }
 
