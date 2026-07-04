@@ -1,8 +1,10 @@
 import "./Nav.css";
 import { useGameStore } from "../store";
+import { signOut } from "../lib/auth";
 
-export default function Nav({ onOpenModal }: { onOpenModal: () => void }) {
+export default function Nav({ onOpenAuth }: { onOpenAuth: () => void }) {
   const debugMode = useGameStore((s) => s.debugMode);
+  const user = useGameStore((s) => s.user);
 
   return (
     <div className="nav">
@@ -16,7 +18,11 @@ export default function Nav({ onOpenModal }: { onOpenModal: () => void }) {
       </div>
 
       <div className="nav-elements-right">
-        <button onClick={onOpenModal}>Modal</button>
+        {user ? (
+          <button onClick={() => signOut()}>{user.email}</button>
+        ) : (
+          <button onClick={onOpenAuth}>Log In</button>
+        )}
       </div>
     </div>
   );
