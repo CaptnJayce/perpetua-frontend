@@ -10,11 +10,22 @@ interface ResourceRowProps {
   purchasedUpgrades: Record<string, number>;
 }
 
+function ResourceIcon({ icon }: { icon?: string }) {
+  if (!icon) {
+    return (
+      <div className="icon icon-placeholder">
+        <span>icon</span>
+      </div>
+    );
+  }
+  return <img src={icon} className="icon" />;
+}
+
 function ResourceRow({ def, resources, purchasedUpgrades }: ResourceRowProps) {
   const effectiveCap = getEffectiveCap(def.id, def.cap, purchasedUpgrades);
   return (
     <div key={def.id} className="resource-info">
-      <img src={def.icon} className="icon" />
+      <ResourceIcon icon={def.icon} />
       <div className="resource-text">
         <div className="resource-name">{def.label}</div>
         <div className="resource-amount">
@@ -90,7 +101,7 @@ export default function Resources() {
           <h3>Quest Items</h3>
           {questResources.map((def) => (
             <p key={def.id} className="resource-info">
-              <img src={def.icon} className="icon" /> {def.label}:{" "}
+              <ResourceIcon icon={def.icon} /> {def.label}:{" "}
               {Math.floor(resources[def.id])} / {def.cap}
             </p>
           ))}
@@ -102,7 +113,7 @@ export default function Resources() {
           <h3 className="milestone-heading">Milestones</h3>
           {milestoneResources.map((def) => (
             <p key={def.id} className="milestone-resource">
-              <img src={def.icon} className="icon" /> {def.label}:{" "}
+              <ResourceIcon icon={def.icon} /> {def.label}:{" "}
               {Math.floor(resources[def.id])} / {def.cap}
             </p>
           ))}

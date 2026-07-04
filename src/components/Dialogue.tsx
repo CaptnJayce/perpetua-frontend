@@ -1,7 +1,7 @@
 import "./Dialogue.css";
 import { NPCS } from "../data/npcs";
 import { useGameStore } from "../store";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { UnlockEvent } from "../systems/unlocker";
 import { getCurrentDialogue, getNextAvailableNode } from "../data/dialogue";
 
@@ -29,15 +29,11 @@ export default function Dialogue() {
     Record<string, NpcDialogueState>
   >({});
   const [shakingId, setShakingId] = useState<string | null>(null);
-  const [shouldAutoClose, setShouldAutoClose] = useState(false);
-  const prevCount = useRef(0);
-  const currentCount = unlockedNpcs.length;
 
   // Starts (or resumes) a live conversation at nodeId. History for the
   // conversation is read from the store as it's added via addDialogueHistory
   // — this just tracks where that session's slice of history begins.
   function startDialogueSession(npcId: string, nodeId: string) {
-    setShouldAutoClose(false);
     setDialogueActive(true);
     setNpcDialogueStates((prev) => ({
       ...prev,
@@ -49,21 +45,32 @@ export default function Dialogue() {
     }));
   }
 
+  // Newly unlocked NPCs can arrive from any game system (tick, gather, craft,
+  // flags), not just from an action taken in this component, so this syncs
+  // with the store directly via subscribe rather than diffing props in an
+  // effect body.
   useEffect(() => {
-    if (currentCount > prevCount.current) {
-      const newNpc = unlockedNpcs[unlockedNpcs.length - 1];
-      const nextNode = getNextAvailableNode(newNpc.id, flags, []);
+    return useGameStore.subscribe((state, prevState) => {
+      if (state.unlockedNpcs.length <= prevState.unlockedNpcs.length) return;
+
+      const newNpc = state.unlockedNpcs[state.unlockedNpcs.length - 1];
+      const nextNode = getNextAvailableNode(newNpc.id, state.flags, []);
       if (nextNode) {
-        startDialogueSession(newNpc.id, nextNode);
+        setDialogueActive(true);
+        setNpcDialogueStates((prev) => ({
+          ...prev,
+          [newNpc.id]: {
+            currentNodeId: nextNode,
+            completed: false,
+            historyStartIndex:
+              state.npcDialogueProgress[newNpc.id]?.history.length ?? 0,
+          },
+        }));
       }
       setSelectedNpc(newNpc);
-    }
-    prevCount.current = currentCount;
-  });
-
-  useEffect(() => {
-    setDialogueIndex(0);
-  }, [selectedNpc?.id]);
+      setDialogueIndex(0);
+    });
+  }, [setDialogueActive]);
 
   const fullNpc = selectedNpc
     ? NPCS.find((n) => n.id === selectedNpc.id)
@@ -86,19 +93,6 @@ export default function Dialogue() {
     ? fullHistory.slice(dialogueState.historyStartIndex)
     : [];
 
-  // Auto-close when dialogue is completed via option click
-  useEffect(() => {
-    if (shouldAutoClose && isComplete && selectedNpc) {
-      const firstHistoryEntry = history[0];
-      if (firstHistoryEntry) {
-        completeDialogueNode(selectedNpc.id, firstHistoryEntry.nodeId);
-      }
-      setSelectedNpc(null);
-      setShouldAutoClose(false);
-      setDialogueActive(false);
-    }
-  }, [shouldAutoClose, isComplete, selectedNpc, history, completeDialogueNode]);
-
   function handleOptionClick(option: {
     text: string;
     nextNodeId?: string;
@@ -113,9 +107,6 @@ export default function Dialogue() {
 
     const nextNodeId = option.nextNodeId;
     const completed = !nextNodeId || nextNodeId === "end";
-    if (completed) {
-      setShouldAutoClose(true);
-    }
 
     addDialogueHistory(selectedNpc.id, {
       nodeId: currentNode.id,
@@ -139,6 +130,21 @@ export default function Dialogue() {
         },
       };
     });
+
+    if (completed) {
+      // addDialogueHistory already committed synchronously, so the store
+      // reflects the new entry — read it fresh instead of waiting a render.
+      const startIndex = dialogueState?.historyStartIndex ?? 0;
+      const sessionHistory =
+        useGameStore.getState().npcDialogueProgress[selectedNpc.id]
+          ?.history ?? [];
+      const firstHistoryEntry = sessionHistory[startIndex];
+      if (firstHistoryEntry) {
+        completeDialogueNode(selectedNpc.id, firstHistoryEntry.nodeId);
+      }
+      setSelectedNpc(null);
+      setDialogueActive(false);
+    }
   }
 
   function hasNewDialogue(npcId: string): boolean {
@@ -163,7 +169,6 @@ export default function Dialogue() {
       startDialogueSession(npc.id, nextNode);
     } else {
       // No new dialogue — show the full history replay
-      setShouldAutoClose(false);
       setDialogueActive(false);
       setNpcDialogueStates((prev) => ({
         ...prev,
@@ -175,6 +180,7 @@ export default function Dialogue() {
       }));
     }
     setSelectedNpc(npc);
+    setDialogueIndex(0);
   }
 
   return (
@@ -188,6 +194,7 @@ export default function Dialogue() {
                   className="close-dialogue"
                   onClick={() => {
                     setSelectedNpc(null);
+                    setDialogueIndex(0);
                     setDialogueActive(false);
                   }}
                 >

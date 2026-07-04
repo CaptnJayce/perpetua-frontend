@@ -9,6 +9,12 @@ import {
   tickWorkers,
   type WorkerAssignment,
 } from "./systems/workers";
+import type { SavedGameFields } from "./lib/gameSaves";
+
+export interface AuthUser {
+  id: string;
+  email: string;
+}
 
 interface UnlockEvent {
   id: string;
@@ -32,6 +38,7 @@ interface GameState {
   purchasedUpgrades: Record<string, number>;
   workerAssignments: Record<string, WorkerAssignment | null>;
   workerCooldowns: Record<string, number>;
+  user: AuthUser | null;
 
   tick: (delta: number) => void;
   gather: (resourceId: string) => void;
@@ -47,6 +54,8 @@ interface GameState {
   setDialogueActive: (active: boolean) => void;
   purchaseUpgrade: (upgradeId: string) => void;
   assignWorker: (workerId: string, assignment: WorkerAssignment | null) => void;
+  setUser: (user: AuthUser | null) => void;
+  hydrateSave: (saved: SavedGameFields) => void;
 }
 
 const initialResources = Object.fromEntries(
@@ -67,7 +76,14 @@ function applyNpcUnlocks(
 ) {
   const newNpcs = checkUnlocks(state);
   if (newNpcs.length) {
-    set({ unlockedNpcs: [...state.unlockedNpcs, ...newNpcs] });
+    const unlockedNpcs = [...state.unlockedNpcs, ...newNpcs];
+    const workerCount = unlockedNpcs.filter(
+      (u) => NPCS.find((n) => n.id === u.id)?.role === "worker",
+    ).length;
+    set({
+      unlockedNpcs,
+      resources: { ...state.resources, workers: workerCount },
+    });
   }
 }
 
@@ -133,6 +149,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   purchasedUpgrades: {},
   workerAssignments: {},
   workerCooldowns: {},
+  user: null,
 
   tick: (delta) => {
     const {
@@ -340,4 +357,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       workerCooldowns: { ...workerCooldowns, [workerId]: 0 },
     });
   },
+
+  setUser: (user) => set({ user }),
+
+  hydrateSave: (saved) => set(saved),
 }));
