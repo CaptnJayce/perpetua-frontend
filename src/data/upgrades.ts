@@ -18,6 +18,17 @@ export interface UpgradeDef {
 }
 
 export const UPGRADES: Record<string, UpgradeDef> = {
+  "unlock-rubber-gathering": {
+    id: "unlock-rubber-gathering",
+    label: "Rubber Gathering",
+    description: "Unlocks gathering Rubber",
+    cost: () => [
+      { resId: "tmp", amnt: 15 },
+      { resId: "wood", amnt: 15 },
+    ],
+    maxPurchases: 1,
+    effects: [],
+  },
   "expand-metal-storage": {
     id: "expand-metal-storage",
     label: "Metal Storage ++",
@@ -25,6 +36,7 @@ export const UPGRADES: Record<string, UpgradeDef> = {
     cost: (level) => [
       { resId: "tmp", amnt: 40 + level * 20 },
       { resId: "beams", amnt: 10 + level * 5 },
+      { resId: "fittings", amnt: 10 + level * 5 },
     ],
     maxPurchases: 5,
     effects: [{ type: "storage", target: "tmp", bonus: 100 }],
@@ -36,7 +48,7 @@ export const UPGRADES: Record<string, UpgradeDef> = {
     cost: (level) => [
       { resId: "tmp", amnt: 40 + level * 20 },
       { resId: "beams", amnt: 10 + level * 5 },
-      { resId: "gear", amnt: 6 + level * 3 },
+      { resId: "fittings", amnt: 10 + level * 5 },
     ],
     maxPurchases: 5,
     effects: [{ type: "storage", target: "wood", bonus: 100 }],
@@ -46,8 +58,9 @@ export const UPGRADES: Record<string, UpgradeDef> = {
     label: "Gear Storage ++",
     description: "Increases Gear storage capacity by 50",
     cost: (level) => [
-      { resId: "tmp", amnt: 30 + level * 15 },
       { resId: "wood", amnt: 15 + level * 8 },
+      { resId: "rubber", amnt: 10 + level * 5 },
+      { resId: "fittings", amnt: 15 },
     ],
     maxPurchases: 5,
     effects: [{ type: "storage", target: "gear", bonus: 50 }],
@@ -58,7 +71,8 @@ export const UPGRADES: Record<string, UpgradeDef> = {
     description: "Increases Template Fittings storage capacity by 50",
     cost: (level) => [
       { resId: "tmp", amnt: 30 + level * 15 },
-      { resId: "beams", amnt: 8 + level * 4 },
+      { resId: "rubber", amnt: 10 + level * 5 },
+      { resId: "beams", amnt: 15 },
     ],
     maxPurchases: 5,
     effects: [{ type: "storage", target: "fittings", bonus: 50 }],
@@ -69,10 +83,24 @@ export const UPGRADES: Record<string, UpgradeDef> = {
     description: "Increases Beams storage capacity by 50",
     cost: (level) => [
       { resId: "tmp", amnt: 30 + level * 15 },
-      { resId: "gear", amnt: 6 + level * 3 },
+      { resId: "rubber", amnt: 10 + level * 5 },
+      { resId: "gear", amnt: 15 },
     ],
     maxPurchases: 5,
     effects: [{ type: "storage", target: "beams", bonus: 50 }],
+  },
+  "expand-rubber-storage": {
+    id: "expand-rubber-storage",
+    label: "Rubber Storage ++",
+    description: "Increases Rubber storage capacity by 50",
+    requiresUpgrade: "unlock-rubber-gathering",
+    cost: (level) => [
+      { resId: "tmp", amnt: 40 + level * 20 },
+      { resId: "beams", amnt: 10 + level * 5 },
+      { resId: "fittings", amnt: 10 + level * 5 },
+    ],
+    maxPurchases: 5,
+    effects: [{ type: "storage", target: "rubber", bonus: 50 }],
   },
   "unlock-efficiency-upgrades": {
     id: "unlock-efficiency-upgrades",

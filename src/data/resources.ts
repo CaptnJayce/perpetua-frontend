@@ -56,11 +56,12 @@ export const RESOURCES: Record<string, ResourceDef> = {
   rubber: {
     id: "rubber",
     label: "Rubber",
-    cap: 100,
+    cap: 75,
     category: "base",
     gatherAmt: 5,
-    gatherCd: 3,
+    gatherCd: 6,
     icon: rubber,
+    requireFlag: "rubber_unlocked",
   },
   gear: {
     id: "gear",

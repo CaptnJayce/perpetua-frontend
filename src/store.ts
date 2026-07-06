@@ -123,6 +123,10 @@ const CONDITIONAL_FLAGS: {
     flag: "gathering_crafting_upgraded",
     condition: (s) => (s.purchasedUpgrades["unlock-efficiency-upgrades"] ?? 0) > 0,
   },
+  {
+    flag: "rubber_unlocked",
+    condition: (s) => (s.purchasedUpgrades["unlock-rubber-gathering"] ?? 0) > 0,
+  },
 ];
 
 function checkFlags(
@@ -185,12 +189,26 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const anyCooldownActive = Object.values(cooldowns).some((cd) => cd > 0);
     if (anyCooldownActive) {
-      update.cooldowns = Object.fromEntries(
-        Object.entries(cooldowns).map(([id, cd]) => [
-          id,
-          Math.max(0, cd - delta),
-        ]),
-      );
+      const nextCooldowns: Record<string, number> = { ...cooldowns };
+      let cooldownResources = update.resources ?? resources;
+      let gatheredSomething = false;
+
+      for (const [id, cd] of Object.entries(cooldowns)) {
+        if (cd <= 0) continue;
+        const remaining = Math.max(0, cd - delta);
+        nextCooldowns[id] = remaining;
+
+        if (remaining <= 0 && RESOURCES[id]?.gatherAmt !== undefined) {
+          const gathered = applyGather(cooldownResources, id, purchasedUpgrades);
+          if (gathered) {
+            cooldownResources = gathered;
+            gatheredSomething = true;
+          }
+        }
+      }
+
+      update.cooldowns = nextCooldowns;
+      if (gatheredSomething) update.resources = cooldownResources;
       dirty = true;
     }
 
@@ -219,19 +237,23 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!def?.gatherAmt || !def?.gatherCd) return;
 
     const { resources, cooldowns, debugMode, purchasedUpgrades } = get();
+
+    if (debugMode) {
+      const nextResources = applyGather(resources, resourceId, purchasedUpgrades);
+      if (!nextResources) return;
+      withUnlocks(get, set, { resources: nextResources });
+      return;
+    }
+
+    if (cooldowns[resourceId] > 0) return;
+
+    const effectiveCap = getEffectiveCap(resourceId, def.cap, purchasedUpgrades);
+    if (resources[resourceId] >= effectiveCap) return;
+
+    // Resources aren't granted until the cooldown finishes ticking down in
+    // tick() — the cooldown represents fetching time, not a click-rate gate.
     const effectiveCd = getEffectiveCooldown(def.gatherCd, purchasedUpgrades);
-
-    if (!debugMode && cooldowns[resourceId] > 0) return;
-
-    const nextResources = applyGather(resources, resourceId, purchasedUpgrades);
-    if (!nextResources) return;
-
-    withUnlocks(get, set, {
-      resources: nextResources,
-      cooldowns: debugMode
-        ? { ...cooldowns }
-        : { ...cooldowns, [resourceId]: effectiveCd },
-    });
+    set({ cooldowns: { ...cooldowns, [resourceId]: effectiveCd } });
   },
 
   craft: (recipeId) => {

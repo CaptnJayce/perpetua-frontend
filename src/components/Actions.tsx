@@ -22,7 +22,11 @@ function CostChips({ costs }: { costs: { resId: string; amnt: number }[] }) {
   );
 }
 
-const gatherables = Object.values(RESOURCES).filter((r) => r.gatherAmt !== undefined);
+function getGatherables(flags: string[]) {
+  return Object.values(RESOURCES).filter(
+    (r) => r.gatherAmt !== undefined && (!r.requireFlag || flags.includes(r.requireFlag)),
+  );
+}
 
 function GatherButton({ resourceId }: { resourceId: string }) {
   const def = RESOURCES[resourceId];
@@ -123,10 +127,11 @@ function UpgradeButton({ upgradeId }: { upgradeId: string }) {
   }
 
   const currentCount = purchasedUpgrades[upgradeId] || 0;
-  const maxed = currentCount >= upgrade.maxPurchases;
+  if (currentCount >= upgrade.maxPurchases) return null;
+
   const cost = upgrade.cost(currentCount);
   const canAfford = cost.every(({ resId, amnt }) => resources[resId] >= amnt);
-  const disabled = isDialogueActive || maxed || !canAfford;
+  const disabled = isDialogueActive || !canAfford;
 
   return (
     <button className="action-btn upgrade-btn" onClick={() => purchaseUpgrade(upgradeId)} disabled={disabled}>
@@ -143,6 +148,8 @@ function WorkerAssignmentRow({ npc }: { npc: NpcDef }) {
   const assignment = useGameStore((s) => s.workerAssignments[npc.id] ?? null);
   const assignWorker = useGameStore((s) => s.assignWorker);
   const isDialogueActive = useGameStore((s) => s.isDialogueActive);
+  const flags = useGameStore((s) => s.flags);
+  const gatherables = getGatherables(flags);
 
   const value = assignment ? `${assignment.type}:${assignment.targetId}` : "";
 
@@ -187,6 +194,8 @@ function WorkerAssignmentRow({ npc }: { npc: NpcDef }) {
 
 export default function Actions() {
   const unlockedNpcs = useGameStore((s) => s.unlockedNpcs);
+  const flags = useGameStore((s) => s.flags);
+  const gatherables = getGatherables(flags);
   const unlockedWorkers = NPCS.filter(
     (npc) => npc.role === "worker" && unlockedNpcs.some((u) => u.id === npc.id),
   );

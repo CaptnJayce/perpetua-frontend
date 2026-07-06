@@ -20,7 +20,7 @@ export const RECIPES: Record<string, RecipeDef> = {
     id: "craftTemplateFittings",
     inputs: [
       { resId: "tmp", amnt: 2 },
-      { resId: "wood", amnt: 1 },
+      { resId: "rubber", amnt: 1 },
     ],
     output: { resId: "fittings", amnt: 1 },
     craftCd: 1,
@@ -68,7 +68,7 @@ export const RECIPES: Record<string, RecipeDef> = {
     id: "craftStorage",
     inputs: [
       { resId: "beams", amnt: 220 },
-      { resId: "rubber", amnt: 80 },
+      { resId: "rubber", amnt: 50 },
       { resId: "fittings", amnt: 80 },
     ],
     output: { resId: "pks", amnt: 1 },
