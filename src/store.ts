@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { RESOURCES } from "./data/resources";
+import { RECIPES } from "./data/recipes";
 import { NPCS } from "./data/npcs";
 import { UPGRADES, getEffectiveCap, getEffectiveCooldown } from "./data/upgrades";
 import { checkUnlocks } from "./systems/unlocker";
@@ -234,11 +235,21 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   craft: (recipeId) => {
-    const { resources, purchasedUpgrades } = get();
+    const recipe = RECIPES[recipeId];
+    const { resources, cooldowns, debugMode, purchasedUpgrades } = get();
+
+    if (recipe?.craftCd && !debugMode && cooldowns[recipeId] > 0) return;
+
     const nextResources = applyCraft(resources, recipeId, purchasedUpgrades);
     if (!nextResources) return;
 
-    withUnlocks(get, set, { resources: nextResources });
+    withUnlocks(get, set, {
+      resources: nextResources,
+      cooldowns:
+        recipe?.craftCd && !debugMode
+          ? { ...cooldowns, [recipeId]: recipe.craftCd }
+          : cooldowns,
+    });
   },
 
   setFlag: (flag) => {

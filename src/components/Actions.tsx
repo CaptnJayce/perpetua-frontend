@@ -49,6 +49,7 @@ function GatherButton({ resourceId }: { resourceId: string }) {
 
 function CraftButton({ recipe }: { recipe: RecipeDef }) {
   const resources = useGameStore((s) => s.resources);
+  const cd = useGameStore((s) => s.cooldowns[recipe.id] ?? 0);
   const craft = useGameStore((s) => s.craft);
   const isDialogueActive = useGameStore((s) => s.isDialogueActive);
   const purchasedUpgrades = useGameStore((s) => s.purchasedUpgrades);
@@ -70,16 +71,29 @@ function CraftButton({ recipe }: { recipe: RecipeDef }) {
     ({ resId, amnt }) => resources[resId] >= amnt,
   );
   const atCap = resources[recipe.output.resId] + recipe.output.amnt > effectiveCap;
-  const disabled = isDialogueActive || !canAfford || atCap;
+  const disabled = isDialogueActive || cd > 0 || !canAfford || atCap;
 
   const costLabel = effectiveInputs
     .map(({ resId, amnt }) => `${amnt} ${RESOURCES[resId].label}`)
     .join(", ");
 
+  const cooldownDuration = recipe.craftCd ?? 1;
+  const progress = Math.max(0, Math.min(1, cd / cooldownDuration));
+
   return (
     <button className="action-btn" onClick={() => craft(recipe.id)} disabled={disabled}>
-      {outputDef.label} x{recipe.output.amnt}
-      <span className="cost"> — {costLabel}</span>
+      {cd > 0 && (
+        <div
+          className="cooldown-overlay"
+          style={{
+            transform: `scaleY(${progress})`,
+          }}
+        />
+      )}
+      <span className="btn-content">
+        {outputDef.label} x{recipe.output.amnt}
+        <span className="cost"> — {costLabel}</span>
+      </span>
     </button>
   );
 }

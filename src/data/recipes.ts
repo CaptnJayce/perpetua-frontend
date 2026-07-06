@@ -2,6 +2,7 @@ export interface RecipeDef {
   id: string;
   inputs: { resId: string; amnt: number }[];
   output: { resId: string; amnt: number };
+  craftCd?: number; // cooldown in seconds between crafts, if any
 }
 
 export const RECIPES: Record<string, RecipeDef> = {
@@ -12,6 +13,7 @@ export const RECIPES: Record<string, RecipeDef> = {
       { resId: "wood", amnt: 1 },
     ],
     output: { resId: "gear", amnt: 1 },
+    craftCd: 1,
   },
 
   craftTemplateFittings: {
@@ -21,12 +23,14 @@ export const RECIPES: Record<string, RecipeDef> = {
       { resId: "wood", amnt: 1 },
     ],
     output: { resId: "fittings", amnt: 1 },
+    craftCd: 1,
   },
 
   craftBeams: {
     id: "craftBeams",
     inputs: [{ resId: "wood", amnt: 2 }],
     output: { resId: "beams", amnt: 1 },
+    craftCd: 1,
   },
 
   craftPropeller: {
@@ -37,6 +41,7 @@ export const RECIPES: Record<string, RecipeDef> = {
       { resId: "beams", amnt: 2 },
     ],
     output: { resId: "propeller", amnt: 1 },
+    craftCd: 1,
   },
 
   craftVent: {
@@ -46,6 +51,7 @@ export const RECIPES: Record<string, RecipeDef> = {
       { resId: "rubber", amnt: 2 },
     ],
     output: { resId: "vent", amnt: 1 },
+    craftCd: 1,
   },
 
   craftGenerator: {
