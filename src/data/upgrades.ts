@@ -20,7 +20,7 @@ export interface UpgradeDef {
 export const UPGRADES: Record<string, UpgradeDef> = {
   "expand-metal-storage": {
     id: "expand-metal-storage",
-    label: "Expand Metal Storage",
+    label: "Metal Storage ++",
     description: "Increases Template Metal storage capacity by 100",
     cost: (level) => [
       { resId: "tmp", amnt: 40 + level * 20 },
@@ -31,7 +31,7 @@ export const UPGRADES: Record<string, UpgradeDef> = {
   },
   "expand-wood-storage": {
     id: "expand-wood-storage",
-    label: "Expand Wood Storage",
+    label: "Wood Storage ++",
     description: "Increases Blazer Wood storage capacity by 100",
     cost: (level) => [
       { resId: "tmp", amnt: 40 + level * 20 },
@@ -43,7 +43,7 @@ export const UPGRADES: Record<string, UpgradeDef> = {
   },
   "expand-gear-storage": {
     id: "expand-gear-storage",
-    label: "Expand Gear Storage",
+    label: "Gear Storage ++",
     description: "Increases Gear storage capacity by 50",
     cost: (level) => [
       { resId: "tmp", amnt: 30 + level * 15 },
@@ -54,7 +54,7 @@ export const UPGRADES: Record<string, UpgradeDef> = {
   },
   "expand-fittings-storage": {
     id: "expand-fittings-storage",
-    label: "Expand Fittings Storage",
+    label: "Fittings Storage ++",
     description: "Increases Template Fittings storage capacity by 50",
     cost: (level) => [
       { resId: "tmp", amnt: 30 + level * 15 },
@@ -65,7 +65,7 @@ export const UPGRADES: Record<string, UpgradeDef> = {
   },
   "expand-beams-storage": {
     id: "expand-beams-storage",
-    label: "Expand Beams Storage",
+    label: "Beams Storage ++",
     description: "Increases Beams storage capacity by 50",
     cost: (level) => [
       { resId: "tmp", amnt: 30 + level * 15 },
@@ -76,7 +76,7 @@ export const UPGRADES: Record<string, UpgradeDef> = {
   },
   "unlock-efficiency-upgrades": {
     id: "unlock-efficiency-upgrades",
-    label: "Unlock Efficiency Upgrades",
+    label: "Efficiency Upgrades",
     description: "Unlocks Faster Gathering and Efficient Crafting for purchase",
     cost: () => [
       { resId: "fittings", amnt: 80 },

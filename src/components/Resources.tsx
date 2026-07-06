@@ -10,15 +10,18 @@ interface ResourceRowProps {
   purchasedUpgrades: Record<string, number>;
 }
 
-function ResourceIcon({ icon }: { icon?: string }) {
+export function ResourceIcon({ icon, size = 64 }: { icon?: string; size?: number }) {
   if (!icon) {
     return (
-      <div className="icon icon-placeholder">
-        <span>icon</span>
+      <div
+        className="icon icon-placeholder"
+        style={{ width: size, height: size, fontSize: size >= 32 ? 11 : 8 }}
+      >
+        {size >= 32 && <span>icon</span>}
       </div>
     );
   }
-  return <img src={icon} className="icon" />;
+  return <img src={icon} className="icon" style={{ width: size, height: size }} />;
 }
 
 function ResourceRow({ def, resources, purchasedUpgrades }: ResourceRowProps) {

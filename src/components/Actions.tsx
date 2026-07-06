@@ -4,9 +4,23 @@ import { RESOURCES } from "../data/resources";
 import { RECIPES } from "../data/recipes";
 import { NPCS } from "../data/npcs";
 import { UPGRADES, getEffectiveCap, getEffectiveCraftCost } from "../data/upgrades";
+import { ResourceIcon } from "./Resources";
 import type { RecipeDef } from "../data/recipes";
 import type { NpcDef } from "../data/npcs";
 import type { WorkerAssignment } from "../systems/workers";
+
+function CostChips({ costs }: { costs: { resId: string; amnt: number }[] }) {
+  return (
+    <span className="cost-chips">
+      {costs.map(({ resId, amnt }) => (
+        <span key={resId} className="cost-chip">
+          <ResourceIcon icon={RESOURCES[resId]?.icon} size={16} />
+          {amnt}
+        </span>
+      ))}
+    </span>
+  );
+}
 
 const gatherables = Object.values(RESOURCES).filter((r) => r.gatherAmt !== undefined);
 
@@ -73,10 +87,6 @@ function CraftButton({ recipe }: { recipe: RecipeDef }) {
   const atCap = resources[recipe.output.resId] + recipe.output.amnt > effectiveCap;
   const disabled = isDialogueActive || cd > 0 || !canAfford || atCap;
 
-  const costLabel = effectiveInputs
-    .map(({ resId, amnt }) => `${amnt} ${RESOURCES[resId].label}`)
-    .join(", ");
-
   const cooldownDuration = recipe.craftCd ?? 1;
   const progress = Math.max(0, Math.min(1, cd / cooldownDuration));
 
@@ -91,8 +101,8 @@ function CraftButton({ recipe }: { recipe: RecipeDef }) {
         />
       )}
       <span className="btn-content">
-        {outputDef.label} x{recipe.output.amnt}
-        <span className="cost"> — {costLabel}</span>
+        <span>{outputDef.label}</span>
+        <CostChips costs={effectiveInputs} />
       </span>
     </button>
   );
@@ -118,15 +128,13 @@ function UpgradeButton({ upgradeId }: { upgradeId: string }) {
   const canAfford = cost.every(({ resId, amnt }) => resources[resId] >= amnt);
   const disabled = isDialogueActive || maxed || !canAfford;
 
-  const costLabel = cost
-    .map(({ resId, amnt }) => `${amnt} ${RESOURCES[resId].label}`)
-    .join(", ");
-
   return (
     <button className="action-btn upgrade-btn" onClick={() => purchaseUpgrade(upgradeId)} disabled={disabled}>
-      <span className="upgrade-label">{upgrade.label}</span>
-      <span className="upgrade-level">Lv. {currentCount}/{upgrade.maxPurchases}</span>
-      <span className="cost"> — {costLabel}</span>
+      <span className="upgrade-top-row">
+        <span className="upgrade-label">{upgrade.label}</span>
+        <span className="upgrade-level">Lv. {currentCount}/{upgrade.maxPurchases}</span>
+      </span>
+      <CostChips costs={cost} />
     </button>
   );
 }
