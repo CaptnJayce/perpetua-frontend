@@ -30,6 +30,11 @@
   cursor: pointer;
 }
 
+.auth-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .auth-error {
   color: #d32f2f;
   font-size: 13px;

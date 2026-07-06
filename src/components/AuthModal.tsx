@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Modal from "./Modal";
-import Turnstile from "./Turnstile";
+import Turnstile, { type TurnstileHandle } from "./Turnstile";
 import "./AuthModal.css";
 
 interface AuthModalProps {
@@ -30,6 +30,7 @@ export default function AuthModal({
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const turnstileRef = useRef<TurnstileHandle>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +72,7 @@ export default function AuthModal({
             required
           />
         </label>
-        <Turnstile onVerify={setCaptchaToken} />
+        <Turnstile ref={turnstileRef} onVerify={setCaptchaToken} />
         {error && <p className="auth-error">{error}</p>}
         <button
           type="submit"
@@ -87,6 +88,7 @@ export default function AuthModal({
         onClick={() => {
           setError(null);
           setCaptchaToken(null);
+          turnstileRef.current?.reset();
           setMode(mode === "login" ? "signup" : "login");
         }}
       >

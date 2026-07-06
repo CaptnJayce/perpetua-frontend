@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 
 declare global {
   interface Window {
@@ -12,17 +12,25 @@ declare global {
         },
       ) => string;
       remove: (widgetId: string) => void;
+      reset: (widgetId: string) => void;
     };
   }
 }
 
-export default function Turnstile({
-  onVerify,
-}: {
-  onVerify: (token: string | null) => void;
-}) {
+export interface TurnstileHandle {
+  reset: () => void;
+}
+
+const Turnstile = forwardRef<TurnstileHandle, { onVerify: (token: string | null) => void }>(
+  function Turnstile({ onVerify }, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    reset: () => {
+      if (widgetIdRef.current) window.turnstile?.reset(widgetIdRef.current);
+    },
+  }));
 
   useEffect(() => {
     const container = containerRef.current;
@@ -59,4 +67,7 @@ export default function Turnstile({
   }, [onVerify]);
 
   return <div ref={containerRef} />;
-}
+  },
+);
+
+export default Turnstile;
