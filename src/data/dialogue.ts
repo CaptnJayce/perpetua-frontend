@@ -20,7 +20,7 @@ export interface DialogueTree {
 
 export const DIALOGUE_TREES: Record<string, DialogueTree> = {
   "mantle-of-logic": {
-    entryNodeIds: ["intro", "worker_visit"],
+    entryNodeIds: ["intro", "worker_visit", "specialization_intro"],
     nodes: {
       intro: {
         id: "intro",
@@ -61,6 +61,42 @@ export const DIALOGUE_TREES: Record<string, DialogueTree> = {
             text: "Thank you",
             nextNodeId: "end",
             setFlag: "unlock_worker_one",
+          },
+        ],
+      },
+      specialization_intro: {
+        id: "specialization_intro",
+        requireFlag: "generator_online",
+        text: "Incredible! You have granted the people of Perpetua infinite energy! My title is hardly befitting of me with a tinkerer like you in the Magnus Factory.",
+        options: [
+          {
+            text: "Wonder what it takes to get that title from you",
+            nextNodeId: "specialization_reply_a",
+          },
+          {
+            text: "You flatter me",
+            nextNodeId: "specialization_reply_b",
+          },
+        ],
+      },
+      specialization_reply_a: {
+        id: "specialization_reply_a",
+        text: "Hahaha! Well, an effervescent heirloom would do it - unfortunately there's only one of those per to go around, and taking mine would probably kill me",
+        options: [{ text: "Continue", nextNodeId: "specialization_promotion" }],
+      },
+      specialization_reply_b: {
+        id: "specialization_reply_b",
+        text: "This isn't flattery. What you've done is truly revolutionary. Generations of future deeds rest on your scales",
+        options: [{ text: "Continue", nextNodeId: "specialization_promotion" }],
+      },
+      specialization_promotion: {
+        id: "specialization_promotion",
+        text: "I think this is deserving of a hefty promotion - This is no usual promotion, however. The technology is still yours by right - so I'll let you decide which direction you steer the Magnus Factory.",
+        options: [
+          {
+            text: "I understand",
+            nextNodeId: "end",
+            setFlag: "specialization_briefed",
           },
         ],
       },

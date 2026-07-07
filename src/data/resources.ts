@@ -4,6 +4,8 @@ import rubber from "../../assets/rubber.png";
 import gear from "../../assets/gear.png";
 import templateFitting from "../../assets/template_fitting.png";
 import blazerBeam from "../../assets/blazer_beam.png";
+import propeller from "../../assets/propeller.png";
+import vent from "../../assets/vent.png";
 
 export type ResourceCategory =
   | "base"
@@ -41,7 +43,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
     cap: 100,
     category: "base",
     gatherAmt: 5,
-    gatherCd: 5,
+    gatherCd: 3,
     icon: templateMetal,
   },
   wood: {
@@ -50,17 +52,18 @@ export const RESOURCES: Record<string, ResourceDef> = {
     cap: 100,
     category: "base",
     gatherAmt: 5,
-    gatherCd: 5,
+    gatherCd: 3,
     icon: blazerWood,
   },
   rubber: {
     id: "rubber",
     label: "Rubber",
-    cap: 100,
+    cap: 75,
     category: "base",
     gatherAmt: 5,
-    gatherCd: 5,
+    gatherCd: 6,
     icon: rubber,
+    requireFlag: "rubber_unlocked",
   },
   gear: {
     id: "gear",
@@ -72,7 +75,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
   },
   fittings: {
     id: "fittings",
-    label: "Template Fittings",
+    label: "Fitting",
     cap: 50,
     category: "crafted",
     displayAsInt: true,
@@ -92,6 +95,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
     cap: 50,
     category: "crafted",
     displayAsInt: true,
+    icon: propeller,
   },
   vent: {
     id: "vent",
@@ -99,6 +103,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
     cap: 50,
     category: "crafted",
     displayAsInt: true,
+    icon: vent,
   },
   workers: {
     id: "workers",
@@ -121,4 +126,26 @@ export const RESOURCES: Record<string, ResourceDef> = {
     category: "milestone",
     displayAsInt: true,
   },
+  temp1: {
+    id: "temp1",
+    label: "Temp1",
+    cap: 1,
+    category: "crafted",
+    displayAsInt: true,
+    requireFlag: "phase2_resources_unlocked",
+  },
+  temp2: {
+    id: "temp2",
+    label: "Temp2",
+    cap: 1,
+    category: "crafted",
+    displayAsInt: true,
+    requireFlag: "phase2_resources_unlocked",
+  },
 };
+
+export function getGatherables(flags: string[]) {
+  return Object.values(RESOURCES).filter(
+    (r) => r.gatherAmt !== undefined && (!r.requireFlag || flags.includes(r.requireFlag)),
+  );
+}

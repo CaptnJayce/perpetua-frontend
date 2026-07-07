@@ -5,6 +5,8 @@ export interface UpgradeEffect {
   bonus?: number; // e.g., 25 for +25 capacity
 }
 
+export type UpgradeCategory = "storage" | "resource-unlock" | "unlock";
+
 export interface UpgradeDef {
   id: string;
   label: string;
@@ -12,71 +14,113 @@ export interface UpgradeDef {
   cost: (level: number) => { resId: string; amnt: number }[];
   maxPurchases: number;
   effects: UpgradeEffect[];
+  category: UpgradeCategory;
   // If set, this upgrade is hidden/unpurchasable until the referenced
   // upgrade id has been bought at least once — a branch-unlock gate.
   requiresUpgrade?: string;
 }
 
 export const UPGRADES: Record<string, UpgradeDef> = {
+  "unlock-rubber-gathering": {
+    id: "unlock-rubber-gathering",
+    label: "Rubber Gathering",
+    description: "Unlocks gathering Rubber",
+    cost: () => [
+      { resId: "tmp", amnt: 15 },
+      { resId: "wood", amnt: 15 },
+    ],
+    maxPurchases: 1,
+    effects: [],
+    category: "resource-unlock",
+  },
   "expand-metal-storage": {
     id: "expand-metal-storage",
-    label: "Expand Metal Storage",
+    label: "Metal Storage ++",
     description: "Increases Template Metal storage capacity by 100",
     cost: (level) => [
       { resId: "tmp", amnt: 40 + level * 20 },
       { resId: "beams", amnt: 10 + level * 5 },
+      { resId: "fittings", amnt: 10 + level * 5 },
+      ...(level >= 1 ? [{ resId: "temp1", amnt: 1 }] : []),
     ],
     maxPurchases: 5,
     effects: [{ type: "storage", target: "tmp", bonus: 100 }],
+    category: "storage",
   },
   "expand-wood-storage": {
     id: "expand-wood-storage",
-    label: "Expand Wood Storage",
+    label: "Wood Storage ++",
     description: "Increases Blazer Wood storage capacity by 100",
     cost: (level) => [
       { resId: "tmp", amnt: 40 + level * 20 },
       { resId: "beams", amnt: 10 + level * 5 },
-      { resId: "gear", amnt: 6 + level * 3 },
+      { resId: "fittings", amnt: 10 + level * 5 },
+      ...(level >= 1 ? [{ resId: "temp1", amnt: 1 }] : []),
     ],
     maxPurchases: 5,
     effects: [{ type: "storage", target: "wood", bonus: 100 }],
+    category: "storage",
   },
   "expand-gear-storage": {
     id: "expand-gear-storage",
-    label: "Expand Gear Storage",
+    label: "Gear Storage ++",
     description: "Increases Gear storage capacity by 50",
     cost: (level) => [
-      { resId: "tmp", amnt: 30 + level * 15 },
       { resId: "wood", amnt: 15 + level * 8 },
+      { resId: "rubber", amnt: 10 + level * 5 },
+      { resId: "fittings", amnt: 15 },
+      ...(level >= 2 ? [{ resId: "temp2", amnt: 1 }] : []),
     ],
     maxPurchases: 5,
     effects: [{ type: "storage", target: "gear", bonus: 50 }],
+    category: "storage",
   },
   "expand-fittings-storage": {
     id: "expand-fittings-storage",
-    label: "Expand Fittings Storage",
-    description: "Increases Template Fittings storage capacity by 50",
+    label: "Fittings Storage ++",
+    description: "Increases Fitting storage capacity by 50",
     cost: (level) => [
       { resId: "tmp", amnt: 30 + level * 15 },
-      { resId: "beams", amnt: 8 + level * 4 },
+      { resId: "rubber", amnt: 10 + level * 5 },
+      { resId: "beams", amnt: 15 },
+      ...(level >= 2 ? [{ resId: "temp2", amnt: 1 }] : []),
     ],
     maxPurchases: 5,
     effects: [{ type: "storage", target: "fittings", bonus: 50 }],
+    category: "storage",
   },
   "expand-beams-storage": {
     id: "expand-beams-storage",
-    label: "Expand Beams Storage",
+    label: "Beams Storage ++",
     description: "Increases Beams storage capacity by 50",
     cost: (level) => [
       { resId: "tmp", amnt: 30 + level * 15 },
-      { resId: "gear", amnt: 6 + level * 3 },
+      { resId: "rubber", amnt: 10 + level * 5 },
+      { resId: "gear", amnt: 15 },
+      ...(level >= 2 ? [{ resId: "temp2", amnt: 1 }] : []),
     ],
     maxPurchases: 5,
     effects: [{ type: "storage", target: "beams", bonus: 50 }],
+    category: "storage",
+  },
+  "expand-rubber-storage": {
+    id: "expand-rubber-storage",
+    label: "Rubber Storage ++",
+    description: "Increases Rubber storage capacity by 50",
+    requiresUpgrade: "unlock-rubber-gathering",
+    cost: (level) => [
+      { resId: "tmp", amnt: 40 + level * 20 },
+      { resId: "beams", amnt: 10 + level * 5 },
+      { resId: "fittings", amnt: 10 + level * 5 },
+      ...(level >= 1 ? [{ resId: "temp1", amnt: 1 }] : []),
+    ],
+    maxPurchases: 5,
+    effects: [{ type: "storage", target: "rubber", bonus: 50 }],
+    category: "storage",
   },
   "unlock-efficiency-upgrades": {
     id: "unlock-efficiency-upgrades",
-    label: "Unlock Efficiency Upgrades",
+    label: "Efficiency Upgrades",
     description: "Unlocks Faster Gathering and Efficient Crafting for purchase",
     cost: () => [
       { resId: "fittings", amnt: 80 },
@@ -84,6 +128,7 @@ export const UPGRADES: Record<string, UpgradeDef> = {
     ],
     maxPurchases: 1,
     effects: [],
+    category: "unlock",
   },
   "faster-gathering": {
     id: "faster-gathering",
@@ -93,6 +138,7 @@ export const UPGRADES: Record<string, UpgradeDef> = {
     cost: (level) => [{ resId: "fittings", amnt: 80 * Math.pow(2, level) }],
     maxPurchases: 3,
     effects: [{ type: "cooldownSpeed", multiplier: 0.75 }],
+    category: "unlock",
   },
   "efficient-crafting": {
     id: "efficient-crafting",
@@ -102,6 +148,7 @@ export const UPGRADES: Record<string, UpgradeDef> = {
     cost: (level) => [{ resId: "beams", amnt: 128 * Math.pow(2, level) }],
     maxPurchases: 3,
     effects: [{ type: "craftCost", multiplier: 0.8 }],
+    category: "unlock",
   },
 };
 

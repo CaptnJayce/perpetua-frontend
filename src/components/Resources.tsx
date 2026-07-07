@@ -2,7 +2,10 @@ import "./Resources.css";
 import { useGameStore } from "../store";
 import { RESOURCES } from "../data/resources";
 import type { ResourceDef } from "../data/resources";
+import { RECIPES } from "../data/recipes";
+import type { RecipeDef } from "../data/recipes";
 import { getEffectiveCap } from "../data/upgrades";
+import { GatherButton, CraftButton } from "./ActionButtons";
 
 interface ResourceRowProps {
   def: ResourceDef;
@@ -10,22 +13,34 @@ interface ResourceRowProps {
   purchasedUpgrades: Record<string, number>;
 }
 
-function ResourceIcon({ icon }: { icon?: string }) {
+const RESOURCE_ICON_SIZE = 48;
+
+export function ResourceIcon({ icon, size = 64 }: { icon?: string; size?: number }) {
   if (!icon) {
     return (
-      <div className="icon icon-placeholder">
-        <span>icon</span>
+      <div
+        className="icon icon-placeholder"
+        style={{ width: size, height: size, fontSize: size >= 32 ? 11 : 8 }}
+      >
+        {size >= 32 && <span>icon</span>}
       </div>
     );
   }
-  return <img src={icon} className="icon" />;
+  return <img src={icon} className="icon" style={{ width: size, height: size }} />;
+}
+
+function getRecipesFor(resId: string): RecipeDef[] {
+  return Object.values(RECIPES).filter((r) => r.output.resId === resId);
 }
 
 function ResourceRow({ def, resources, purchasedUpgrades }: ResourceRowProps) {
   const effectiveCap = getEffectiveCap(def.id, def.cap, purchasedUpgrades);
+  const recipes = getRecipesFor(def.id);
+  const hasActions = def.gatherAmt !== undefined || recipes.length > 0;
+
   return (
     <div key={def.id} className="resource-info">
-      <ResourceIcon icon={def.icon} />
+      <ResourceIcon icon={def.icon} size={RESOURCE_ICON_SIZE} />
       <div className="resource-text">
         <div className="resource-name">{def.label}</div>
         <div className="resource-amount">
@@ -35,6 +50,14 @@ function ResourceRow({ def, resources, purchasedUpgrades }: ResourceRowProps) {
           / {effectiveCap}
         </div>
       </div>
+      {hasActions && (
+        <div className="resource-actions">
+          {def.gatherAmt !== undefined && <GatherButton resourceId={def.id} />}
+          {recipes.map((recipe) => (
+            <CraftButton key={recipe.id} recipe={recipe} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -49,6 +72,8 @@ export default function Resources() {
   );
 
   const baseResources = visibleResources.filter((def) => def.category === "base");
+  const primaryBaseResources = baseResources.filter((def) => !def.requireFlag);
+  const gatedBaseResources = baseResources.filter((def) => def.requireFlag);
   const passiveResources = visibleResources.filter(
     (def) => def.category === "passive" || def.category === "worker",
   );
@@ -58,8 +83,16 @@ export default function Resources() {
 
   return (
     <div className="resources">
-      <h2>Resources</h2>
-      {baseResources.map((def) => (
+      {primaryBaseResources.map((def) => (
+        <ResourceRow
+          key={def.id}
+          def={def}
+          resources={resources}
+          purchasedUpgrades={purchasedUpgrades}
+        />
+      ))}
+
+      {gatedBaseResources.map((def) => (
         <ResourceRow
           key={def.id}
           def={def}
@@ -101,7 +134,7 @@ export default function Resources() {
           <h3>Quest Items</h3>
           {questResources.map((def) => (
             <p key={def.id} className="resource-info">
-              <ResourceIcon icon={def.icon} /> {def.label}:{" "}
+              <ResourceIcon icon={def.icon} size={RESOURCE_ICON_SIZE} /> {def.label}:{" "}
               {Math.floor(resources[def.id])} / {def.cap}
             </p>
           ))}
@@ -112,10 +145,12 @@ export default function Resources() {
         <>
           <h3 className="milestone-heading">Milestones</h3>
           {milestoneResources.map((def) => (
-            <p key={def.id} className="milestone-resource">
-              <ResourceIcon icon={def.icon} /> {def.label}:{" "}
-              {Math.floor(resources[def.id])} / {def.cap}
-            </p>
+            <ResourceRow
+              key={def.id}
+              def={def}
+              resources={resources}
+              purchasedUpgrades={purchasedUpgrades}
+            />
           ))}
         </>
       )}

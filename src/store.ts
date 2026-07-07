@@ -1,7 +1,19 @@
 import { create } from "zustand";
 import { RESOURCES } from "./data/resources";
+import { RECIPES } from "./data/recipes";
 import { NPCS } from "./data/npcs";
-import { UPGRADES, getEffectiveCap, getEffectiveCooldown } from "./data/upgrades";
+import {
+  UPGRADES,
+  getEffectiveCap,
+  getEffectiveCooldown,
+  getEffectiveCraftCost,
+} from "./data/upgrades";
+import { SPECIALIZATIONS } from "./data/specializations";
+import {
+  getCurrentDialogue,
+  getNextAvailableNode,
+  type DialogueOption,
+} from "./data/dialogue";
 import { checkUnlocks } from "./systems/unlocker";
 import { applyGather, applyCraft } from "./systems/production";
 import {
@@ -26,6 +38,15 @@ export interface NpcDialogueProgress {
   history: { nodeId: string; npcText: string; playerResponse: string }[];
 }
 
+export interface NpcDialogueSessionState {
+  currentNodeId: string;
+  completed: boolean;
+  // Index into the store's lifetime history for this NPC marking where the
+  // current view should start reading from — 0 for a full replay, or the
+  // history length at session-start so only the live session's exchanges show.
+  historyStartIndex: number;
+}
+
 interface GameState {
   resources: Record<string, number>;
   cooldowns: Record<string, number>;
@@ -38,12 +59,17 @@ interface GameState {
   purchasedUpgrades: Record<string, number>;
   workerAssignments: Record<string, WorkerAssignment | null>;
   workerCooldowns: Record<string, number>;
+  specialization: string | null;
   user: AuthUser | null;
+  selectedNpcId: string | null;
+  npcDialogueStates: Record<string, NpcDialogueSessionState>;
+  dialogueHistoryIndex: number;
 
   tick: (delta: number) => void;
   gather: (resourceId: string) => void;
   craft: (recipeId: string) => void;
   setFlag: (flag: string) => void;
+  chooseSpecialization: (specializationId: string) => void;
   completeDialogueNode: (npcId: string, nodeId: string) => void;
   addDialogueHistory: (
     npcId: string,
@@ -51,11 +77,15 @@ interface GameState {
   ) => void;
   toggleDebugMode: () => void;
   emptyResources: () => void;
-  setDialogueActive: (active: boolean) => void;
+  debugGrantGenerator: () => void;
   purchaseUpgrade: (upgradeId: string) => void;
   assignWorker: (workerId: string, assignment: WorkerAssignment | null) => void;
   setUser: (user: AuthUser | null) => void;
   hydrateSave: (saved: SavedGameFields) => void;
+  selectNpc: (npcId: string) => void;
+  submitDialogueOption: (option: DialogueOption) => void;
+  closeDialogueView: () => void;
+  setDialogueHistoryIndex: (index: number) => void;
 }
 
 const initialResources = Object.fromEntries(
@@ -80,9 +110,30 @@ function applyNpcUnlocks(
     const workerCount = unlockedNpcs.filter(
       (u) => NPCS.find((n) => n.id === u.id)?.role === "worker",
     ).length;
+
+    // Newly unlocked NPCs can arrive from any game system (tick, gather,
+    // craft, flags) — auto-select the latest one and, if they have dialogue
+    // ready, open it immediately.
+    const newNpc = newNpcs[newNpcs.length - 1];
+    const nextNode = getNextAvailableNode(newNpc.id, state.flags, []);
+
     set({
       unlockedNpcs,
       resources: { ...state.resources, workers: workerCount },
+      selectedNpcId: newNpc.id,
+      dialogueHistoryIndex: 0,
+      isDialogueActive: nextNode ? true : state.isDialogueActive,
+      npcDialogueStates: nextNode
+        ? {
+            ...state.npcDialogueStates,
+            [newNpc.id]: {
+              currentNodeId: nextNode,
+              completed: false,
+              historyStartIndex:
+                state.npcDialogueProgress[newNpc.id]?.history.length ?? 0,
+            },
+          }
+        : state.npcDialogueStates,
     });
   }
 }
@@ -122,6 +173,10 @@ const CONDITIONAL_FLAGS: {
     flag: "gathering_crafting_upgraded",
     condition: (s) => (s.purchasedUpgrades["unlock-efficiency-upgrades"] ?? 0) > 0,
   },
+  {
+    flag: "rubber_unlocked",
+    condition: (s) => (s.purchasedUpgrades["unlock-rubber-gathering"] ?? 0) > 0,
+  },
 ];
 
 function checkFlags(
@@ -149,7 +204,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   purchasedUpgrades: {},
   workerAssignments: {},
   workerCooldowns: {},
+  specialization: null,
   user: null,
+  selectedNpcId: null,
+  npcDialogueStates: {},
+  dialogueHistoryIndex: 0,
 
   tick: (delta) => {
     const {
@@ -184,12 +243,34 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const anyCooldownActive = Object.values(cooldowns).some((cd) => cd > 0);
     if (anyCooldownActive) {
-      update.cooldowns = Object.fromEntries(
-        Object.entries(cooldowns).map(([id, cd]) => [
-          id,
-          Math.max(0, cd - delta),
-        ]),
-      );
+      const nextCooldowns: Record<string, number> = { ...cooldowns };
+      let cooldownResources = update.resources ?? resources;
+      let producedSomething = false;
+
+      for (const [id, cd] of Object.entries(cooldowns)) {
+        if (cd <= 0) continue;
+        const remaining = Math.max(0, cd - delta);
+        nextCooldowns[id] = remaining;
+
+        if (remaining <= 0) {
+          if (RESOURCES[id]?.gatherAmt !== undefined) {
+            const gathered = applyGather(cooldownResources, id, purchasedUpgrades);
+            if (gathered) {
+              cooldownResources = gathered;
+              producedSomething = true;
+            }
+          } else if (RECIPES[id]) {
+            const crafted = applyCraft(cooldownResources, id, purchasedUpgrades);
+            if (crafted) {
+              cooldownResources = crafted;
+              producedSomething = true;
+            }
+          }
+        }
+      }
+
+      update.cooldowns = nextCooldowns;
+      if (producedSomething) update.resources = cooldownResources;
       dirty = true;
     }
 
@@ -218,27 +299,60 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!def?.gatherAmt || !def?.gatherCd) return;
 
     const { resources, cooldowns, debugMode, purchasedUpgrades } = get();
+
+    if (debugMode) {
+      const nextResources = applyGather(resources, resourceId, purchasedUpgrades);
+      if (!nextResources) return;
+      withUnlocks(get, set, { resources: nextResources });
+      return;
+    }
+
+    if (cooldowns[resourceId] > 0) return;
+
+    const effectiveCap = getEffectiveCap(resourceId, def.cap, purchasedUpgrades);
+    if (resources[resourceId] >= effectiveCap) return;
+
+    // Resources aren't granted until the cooldown finishes ticking down in
+    // tick() — the cooldown represents fetching time, not a click-rate gate.
     const effectiveCd = getEffectiveCooldown(def.gatherCd, purchasedUpgrades);
-
-    if (!debugMode && cooldowns[resourceId] > 0) return;
-
-    const nextResources = applyGather(resources, resourceId, purchasedUpgrades);
-    if (!nextResources) return;
-
-    withUnlocks(get, set, {
-      resources: nextResources,
-      cooldowns: debugMode
-        ? { ...cooldowns }
-        : { ...cooldowns, [resourceId]: effectiveCd },
-    });
+    set({ cooldowns: { ...cooldowns, [resourceId]: effectiveCd } });
   },
 
   craft: (recipeId) => {
-    const { resources, purchasedUpgrades } = get();
-    const nextResources = applyCraft(resources, recipeId, purchasedUpgrades);
-    if (!nextResources) return;
+    const recipe = RECIPES[recipeId];
+    if (!recipe) return;
 
-    withUnlocks(get, set, { resources: nextResources });
+    const { resources, cooldowns, debugMode, purchasedUpgrades } = get();
+
+    if (debugMode) {
+      const nextResources = applyCraft(resources, recipeId, purchasedUpgrades);
+      if (!nextResources) return;
+      withUnlocks(get, set, { resources: nextResources });
+      return;
+    }
+
+    if (!recipe.craftCd) {
+      // Milestone crafts (pkg/pks) have no cooldown — they resolve instantly.
+      const nextResources = applyCraft(resources, recipeId, purchasedUpgrades);
+      if (!nextResources) return;
+      withUnlocks(get, set, { resources: nextResources });
+      return;
+    }
+
+    if (cooldowns[recipeId] > 0) return;
+
+    const outputDef = RESOURCES[recipe.output.resId];
+    const effectiveCap = getEffectiveCap(recipe.output.resId, outputDef.cap, purchasedUpgrades);
+    const canAfford = recipe.inputs.every(
+      ({ resId, amnt }) => resources[resId] >= getEffectiveCraftCost(amnt, purchasedUpgrades),
+    );
+    const atCap = resources[recipe.output.resId] + recipe.output.amnt > effectiveCap;
+    if (!canAfford || atCap) return;
+
+    // Inputs aren't spent and the output isn't granted until the cooldown
+    // finishes ticking down in tick() — same delayed-production timing as
+    // gather.
+    set({ cooldowns: { ...cooldowns, [recipeId]: recipe.craftCd } });
   },
 
   setFlag: (flag) => {
@@ -247,6 +361,19 @@ export const useGameStore = create<GameState>((set, get) => ({
       set({ flags: [...flags, flag] });
       applyNpcUnlocks(get(), set);
     }
+  },
+
+  chooseSpecialization: (specializationId) => {
+    const { specialization, flags } = get();
+    if (specialization) return;
+
+    const spec = SPECIALIZATIONS.find((s) => s.id === specializationId);
+    if (!spec) return;
+
+    set({
+      specialization: specializationId,
+      flags: flags.includes(spec.flag) ? flags : [...flags, spec.flag],
+    });
   },
 
   completeDialogueNode: (npcId, nodeId) => {
@@ -285,6 +412,98 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
   },
 
+  selectNpc: (npcId) => {
+    const { npcDialogueProgress, flags, npcDialogueStates } = get();
+    const progress = npcDialogueProgress[npcId];
+    const completedNodeIds = progress?.completedNodeIds ?? [];
+    const nextNode = getNextAvailableNode(npcId, flags, completedNodeIds);
+
+    if (nextNode) {
+      set({
+        isDialogueActive: true,
+        selectedNpcId: npcId,
+        dialogueHistoryIndex: 0,
+        npcDialogueStates: {
+          ...npcDialogueStates,
+          [npcId]: {
+            currentNodeId: nextNode,
+            completed: false,
+            historyStartIndex: progress?.history.length ?? 0,
+          },
+        },
+      });
+    } else {
+      // No new dialogue — show the full history replay instead.
+      set({
+        isDialogueActive: false,
+        selectedNpcId: npcId,
+        dialogueHistoryIndex: 0,
+        npcDialogueStates: {
+          ...npcDialogueStates,
+          [npcId]: {
+            currentNodeId: npcDialogueStates[npcId]?.currentNodeId ?? "end",
+            completed: true,
+            historyStartIndex: 0,
+          },
+        },
+      });
+    }
+  },
+
+  submitDialogueOption: (option) => {
+    const { selectedNpcId, npcDialogueStates } = get();
+    if (!selectedNpcId) return;
+
+    const dialogueState = npcDialogueStates[selectedNpcId];
+    const currentNodeId = dialogueState?.currentNodeId ?? "intro";
+    const currentNode = getCurrentDialogue(selectedNpcId, currentNodeId);
+    if (!currentNode) return;
+
+    if (option.setFlag) get().setFlag(option.setFlag);
+
+    const nextNodeId = option.nextNodeId;
+    const completed = !nextNodeId || nextNodeId === "end";
+
+    get().addDialogueHistory(selectedNpcId, {
+      nodeId: currentNode.id,
+      npcText: currentNode.text,
+      playerResponse: option.text,
+    });
+
+    const prevState = get().npcDialogueStates[selectedNpcId] ?? {
+      currentNodeId: "intro",
+      completed: false,
+      historyStartIndex: 0,
+    };
+    set({
+      npcDialogueStates: {
+        ...get().npcDialogueStates,
+        [selectedNpcId]: {
+          ...prevState,
+          currentNodeId: nextNodeId || "end",
+          completed,
+        },
+      },
+    });
+
+    if (completed) {
+      const startIndex = dialogueState?.historyStartIndex ?? 0;
+      const sessionHistory =
+        get().npcDialogueProgress[selectedNpcId]?.history ?? [];
+      const firstHistoryEntry = sessionHistory[startIndex];
+      if (firstHistoryEntry) {
+        get().completeDialogueNode(selectedNpcId, firstHistoryEntry.nodeId);
+      }
+      set({ selectedNpcId: null, isDialogueActive: false });
+    }
+  },
+
+  closeDialogueView: () => {
+    set({ selectedNpcId: null, dialogueHistoryIndex: 0, isDialogueActive: false });
+  },
+
+  setDialogueHistoryIndex: (index) => set({ dialogueHistoryIndex: index }),
+
   toggleDebugMode: () => {
     const { debugMode, resources, purchasedUpgrades } = get();
     const nextDebugMode = !debugMode;
@@ -309,8 +528,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ resources: { ...initialResources } });
   },
 
-  setDialogueActive: (active) => {
-    set({ isDialogueActive: active });
+  debugGrantGenerator: () => {
+    const { debugMode, resources } = get();
+    if (!debugMode) return;
+    withUnlocks(get, set, {
+      resources: { ...resources, pkg: 1, pks: 1 },
+    });
   },
 
   purchaseUpgrade: (upgradeId) => {

@@ -7,8 +7,8 @@ export type WorkerAssignment =
   | { type: "gather"; targetId: string }
   | { type: "craft"; targetId: string };
 
-// Recipes have no inherent cooldown for the player (crafting is limited only
-// by input availability), so automated workers need their own pace.
+// Fallback pace for recipes with no craftCd (milestone crafts), so an
+// automated worker assigned to one still retries at a sane cadence.
 const WORKER_CRAFT_INTERVAL = 3;
 
 export function isValidAssignment(assignment: WorkerAssignment): boolean {
@@ -26,7 +26,8 @@ function getWorkerInterval(
     const def = RESOURCES[assignment.targetId];
     return getEffectiveCooldown(def?.gatherCd ?? 1, purchasedUpgrades);
   }
-  return WORKER_CRAFT_INTERVAL;
+  const recipe = RECIPES[assignment.targetId];
+  return recipe?.craftCd ?? WORKER_CRAFT_INTERVAL;
 }
 
 interface TickWorkersInput {

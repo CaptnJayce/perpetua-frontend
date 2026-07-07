@@ -1,0 +1,87 @@
+.action-btn {
+  position: relative;
+  overflow: hidden;
+  border-image: url("../../assets/button.png") 10 fill;
+  color: var(--iron);
+  background: none;
+  flex: 0 0 auto;
+  border-width: 10px;
+  image-rendering: pixelated;
+  padding: 0 2px 0 2px;
+  margin-top: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+  white-space: nowrap;
+  transition: transform 60ms ease-in;
+}
+
+.action-btn:not(:disabled):active {
+  transform: translateY(4px);
+  transition: transform 20ms ease-out;
+}
+
+.action-btn:hover {
+  color: var(--iron);
+}
+
+.action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cooldown-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(80, 80, 80, 0.65);
+  transform-origin: bottom;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.upgrade-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.upgrade-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.upgrade-label {
+  flex: 1;
+}
+
+.upgrade-level {
+  font-size: 11px;
+  color: var(--brass);
+  white-space: nowrap;
+}
+
+.cost-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cost-chip {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--brass);
+  font-size: 11px;
+}
