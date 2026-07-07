@@ -3,11 +3,34 @@ import { useGameStore } from "../store";
 import { RESOURCES } from "../data/resources";
 import { RECIPES } from "../data/recipes";
 import { NPCS } from "../data/npcs";
-import { UPGRADES, getEffectiveCap, getEffectiveCraftCost } from "../data/upgrades";
+import {
+  UPGRADES,
+  getEffectiveCap,
+  getEffectiveCraftCost,
+  type UpgradeCategory,
+} from "../data/upgrades";
 import { ResourceIcon } from "./Resources";
 import type { RecipeDef } from "../data/recipes";
 import type { NpcDef } from "../data/npcs";
 import type { WorkerAssignment } from "../systems/workers";
+
+type RecipeTier = "base" | "crafted" | "milestone";
+
+function getRecipeTier(recipe: RecipeDef): RecipeTier {
+  const outputDef = RESOURCES[recipe.output.resId];
+  if (outputDef?.category === "milestone") return "milestone";
+  const usesCraftedInput = recipe.inputs.some(
+    ({ resId }) => RESOURCES[resId]?.category !== "base",
+  );
+  return usesCraftedInput ? "crafted" : "base";
+}
+
+const RECIPE_TIER_ORDER: RecipeTier[] = ["base", "crafted", "milestone"];
+const UPGRADE_CATEGORY_ORDER: UpgradeCategory[] = [
+  "storage",
+  "resource-unlock",
+  "unlock",
+];
 
 function CostChips({ costs }: { costs: { resId: string; amnt: number }[] }) {
   return (
@@ -200,6 +223,19 @@ export default function Actions() {
     (npc) => npc.role === "worker" && unlockedNpcs.some((u) => u.id === npc.id),
   );
 
+  const primaryGatherables = gatherables.filter((r) => !r.requireFlag);
+  const gatedGatherables = gatherables.filter((r) => r.requireFlag);
+
+  const recipesByTier = RECIPE_TIER_ORDER.map((tier) => ({
+    tier,
+    recipes: Object.values(RECIPES).filter((r) => getRecipeTier(r) === tier),
+  })).filter((group) => group.recipes.length > 0);
+
+  const upgradesByCategory = UPGRADE_CATEGORY_ORDER.map((category) => ({
+    category,
+    upgrades: Object.values(UPGRADES).filter((u) => u.category === category),
+  })).filter((group) => group.upgrades.length > 0);
+
   return (
     <div className="actions">
       <h2>Actions</h2>
@@ -207,19 +243,34 @@ export default function Actions() {
       <section>
         <h3>Gather</h3>
         <div className="btn-grid">
-          {gatherables.map((r) => (
+          {primaryGatherables.map((r) => (
             <GatherButton key={r.id} resourceId={r.id} />
           ))}
         </div>
+        {gatedGatherables.length > 0 && (
+          <>
+            <div className="tier-divider" />
+            <div className="btn-grid">
+              {gatedGatherables.map((r) => (
+                <GatherButton key={r.id} resourceId={r.id} />
+              ))}
+            </div>
+          </>
+        )}
       </section>
 
       <section>
         <h3>Craft</h3>
-        <div className="btn-grid">
-          {Object.values(RECIPES).map((recipe) => (
-            <CraftButton key={recipe.id} recipe={recipe} />
-          ))}
-        </div>
+        {recipesByTier.map((group, i) => (
+          <div key={group.tier}>
+            {i > 0 && <div className="tier-divider" />}
+            <div className="btn-grid">
+              {group.recipes.map((recipe) => (
+                <CraftButton key={recipe.id} recipe={recipe} />
+              ))}
+            </div>
+          </div>
+        ))}
       </section>
 
       {unlockedWorkers.length > 0 && (
@@ -235,11 +286,16 @@ export default function Actions() {
 
       <section>
         <h3>Upgrades</h3>
-        <div className="btn-grid">
-          {Object.values(UPGRADES).map((upgrade) => (
-            <UpgradeButton key={upgrade.id} upgradeId={upgrade.id} />
-          ))}
-        </div>
+        {upgradesByCategory.map((group, i) => (
+          <div key={group.category}>
+            {i > 0 && <div className="tier-divider" />}
+            <div className="btn-grid">
+              {group.upgrades.map((upgrade) => (
+                <UpgradeButton key={upgrade.id} upgradeId={upgrade.id} />
+              ))}
+            </div>
+          </div>
+        ))}
       </section>
     </div>
   );

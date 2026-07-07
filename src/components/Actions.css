@@ -17,8 +17,7 @@
   border-image: url("../../assets/button.png") 10 fill;
   color: var(--iron);
   background: none;
-  flex: 0 1 auto;
-  max-width: 190px;
+  flex: 0 0 auto;
   border-width: 10px;
   image-rendering: pixelated;
   padding: 0 2px 0 2px;
@@ -26,6 +25,7 @@
   cursor: pointer;
   font-size: 12px;
   text-align: left;
+  white-space: nowrap;
   transition: transform 60ms ease-in;
 }
 
@@ -125,4 +125,9 @@
 
 .worker-select {
   font-size: 12px;
+}
+
+.tier-divider {
+  border-top: 1px solid color-mix(in srgb, var(--iron) 40%, transparent);
+  margin: 8px 0;
 }

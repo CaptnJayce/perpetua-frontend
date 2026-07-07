@@ -2,7 +2,12 @@ import { create } from "zustand";
 import { RESOURCES } from "./data/resources";
 import { RECIPES } from "./data/recipes";
 import { NPCS } from "./data/npcs";
-import { UPGRADES, getEffectiveCap, getEffectiveCooldown } from "./data/upgrades";
+import {
+  UPGRADES,
+  getEffectiveCap,
+  getEffectiveCooldown,
+  getEffectiveCraftCost,
+} from "./data/upgrades";
 import { SPECIALIZATIONS } from "./data/specializations";
 import { checkUnlocks } from "./systems/unlocker";
 import { applyGather, applyCraft } from "./systems/production";
@@ -196,24 +201,32 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (anyCooldownActive) {
       const nextCooldowns: Record<string, number> = { ...cooldowns };
       let cooldownResources = update.resources ?? resources;
-      let gatheredSomething = false;
+      let producedSomething = false;
 
       for (const [id, cd] of Object.entries(cooldowns)) {
         if (cd <= 0) continue;
         const remaining = Math.max(0, cd - delta);
         nextCooldowns[id] = remaining;
 
-        if (remaining <= 0 && RESOURCES[id]?.gatherAmt !== undefined) {
-          const gathered = applyGather(cooldownResources, id, purchasedUpgrades);
-          if (gathered) {
-            cooldownResources = gathered;
-            gatheredSomething = true;
+        if (remaining <= 0) {
+          if (RESOURCES[id]?.gatherAmt !== undefined) {
+            const gathered = applyGather(cooldownResources, id, purchasedUpgrades);
+            if (gathered) {
+              cooldownResources = gathered;
+              producedSomething = true;
+            }
+          } else if (RECIPES[id]) {
+            const crafted = applyCraft(cooldownResources, id, purchasedUpgrades);
+            if (crafted) {
+              cooldownResources = crafted;
+              producedSomething = true;
+            }
           }
         }
       }
 
       update.cooldowns = nextCooldowns;
-      if (gatheredSomething) update.resources = cooldownResources;
+      if (producedSomething) update.resources = cooldownResources;
       dirty = true;
     }
 
@@ -263,20 +276,39 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   craft: (recipeId) => {
     const recipe = RECIPES[recipeId];
+    if (!recipe) return;
+
     const { resources, cooldowns, debugMode, purchasedUpgrades } = get();
 
-    if (recipe?.craftCd && !debugMode && cooldowns[recipeId] > 0) return;
+    if (debugMode) {
+      const nextResources = applyCraft(resources, recipeId, purchasedUpgrades);
+      if (!nextResources) return;
+      withUnlocks(get, set, { resources: nextResources });
+      return;
+    }
 
-    const nextResources = applyCraft(resources, recipeId, purchasedUpgrades);
-    if (!nextResources) return;
+    if (!recipe.craftCd) {
+      // Milestone crafts (pkg/pks) have no cooldown — they resolve instantly.
+      const nextResources = applyCraft(resources, recipeId, purchasedUpgrades);
+      if (!nextResources) return;
+      withUnlocks(get, set, { resources: nextResources });
+      return;
+    }
 
-    withUnlocks(get, set, {
-      resources: nextResources,
-      cooldowns:
-        recipe?.craftCd && !debugMode
-          ? { ...cooldowns, [recipeId]: recipe.craftCd }
-          : cooldowns,
-    });
+    if (cooldowns[recipeId] > 0) return;
+
+    const outputDef = RESOURCES[recipe.output.resId];
+    const effectiveCap = getEffectiveCap(recipe.output.resId, outputDef.cap, purchasedUpgrades);
+    const canAfford = recipe.inputs.every(
+      ({ resId, amnt }) => resources[resId] >= getEffectiveCraftCost(amnt, purchasedUpgrades),
+    );
+    const atCap = resources[recipe.output.resId] + recipe.output.amnt > effectiveCap;
+    if (!canAfford || atCap) return;
+
+    // Inputs aren't spent and the output isn't granted until the cooldown
+    // finishes ticking down in tick() — same delayed-production timing as
+    // gather.
+    set({ cooldowns: { ...cooldowns, [recipeId]: recipe.craftCd } });
   },
 
   setFlag: (flag) => {
