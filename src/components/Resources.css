@@ -7,16 +7,24 @@
 }
 
 .resource-info {
-  font-size: 20px;
+  font-size: 18px;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
-  border-bottom: 2px solid #0000004d;
+  margin-bottom: 6px;
 }
 
 .resource-text {
   display: flex;
   flex-direction: column;
+}
+
+.resource-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
 }
 
 .milestone-heading {

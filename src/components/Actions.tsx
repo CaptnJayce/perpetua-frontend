@@ -1,169 +1,69 @@
+import { Fragment, useState } from "react";
 import "./Actions.css";
 import { useGameStore } from "../store";
-import { RESOURCES } from "../data/resources";
+import { RESOURCES, getGatherables } from "../data/resources";
 import { RECIPES } from "../data/recipes";
 import { NPCS } from "../data/npcs";
-import {
-  UPGRADES,
-  getEffectiveCap,
-  getEffectiveCraftCost,
-  type UpgradeCategory,
-} from "../data/upgrades";
-import { ResourceIcon } from "./Resources";
-import type { RecipeDef } from "../data/recipes";
+import { UPGRADES, type UpgradeCategory } from "../data/upgrades";
+import { getNextAvailableNode } from "../data/dialogue";
+import { UpgradeButton } from "./ActionButtons";
 import type { NpcDef } from "../data/npcs";
 import type { WorkerAssignment } from "../systems/workers";
+import type { UnlockEvent } from "../systems/unlocker";
 
-type RecipeTier = "base" | "crafted" | "milestone";
+const UPGRADE_CATEGORY_ORDER: UpgradeCategory[] = ["storage", "resource-unlock", "unlock"];
 
-function getRecipeTier(recipe: RecipeDef): RecipeTier {
-  const outputDef = RESOURCES[recipe.output.resId];
-  if (outputDef?.category === "milestone") return "milestone";
-  const usesCraftedInput = recipe.inputs.some(
-    ({ resId }) => RESOURCES[resId]?.category !== "base",
-  );
-  return usesCraftedInput ? "crafted" : "base";
-}
-
-const RECIPE_TIER_ORDER: RecipeTier[] = ["base", "crafted", "milestone"];
-const UPGRADE_CATEGORY_ORDER: UpgradeCategory[] = [
-  "storage",
-  "resource-unlock",
-  "unlock",
-];
-
-function CostChips({ costs }: { costs: { resId: string; amnt: number }[] }) {
-  return (
-    <span className="cost-chips">
-      {costs.map(({ resId, amnt }) => (
-        <span key={resId} className="cost-chip">
-          <ResourceIcon icon={RESOURCES[resId]?.icon} size={16} />
-          {amnt}
-        </span>
-      ))}
-    </span>
-  );
-}
-
-function getGatherables(flags: string[]) {
-  return Object.values(RESOURCES).filter(
-    (r) => r.gatherAmt !== undefined && (!r.requireFlag || flags.includes(r.requireFlag)),
-  );
-}
-
-function GatherButton({ resourceId }: { resourceId: string }) {
-  const def = RESOURCES[resourceId];
-  const amount = useGameStore((s) => s.resources[resourceId]);
-  const cd = useGameStore((s) => s.cooldowns[resourceId] ?? 0);
-  const gather = useGameStore((s) => s.gather);
+function NpcPicker() {
+  const unlockedNpcs = useGameStore((s) => s.unlockedNpcs);
+  const flags = useGameStore((s) => s.flags);
+  const npcDialogueProgress = useGameStore((s) => s.npcDialogueProgress);
+  const selectedNpcId = useGameStore((s) => s.selectedNpcId);
+  const selectNpc = useGameStore((s) => s.selectNpc);
   const isDialogueActive = useGameStore((s) => s.isDialogueActive);
-  const purchasedUpgrades = useGameStore((s) => s.purchasedUpgrades);
+  const [shakingId, setShakingId] = useState<string | null>(null);
 
-  const effectiveCap = getEffectiveCap(resourceId, def.cap, purchasedUpgrades);
-
-  const atCap = amount >= effectiveCap;
-  const disabled = isDialogueActive || cd > 0 || atCap;
-
-  const cooldownDuration = def.gatherCd ?? 1;
-  const progress = Math.max(0, Math.min(1, cd / cooldownDuration));
-
-  return (
-    <button
-      className="action-btn"
-      onClick={() => gather(resourceId)}
-      disabled={disabled}
-    >
-      {cd > 0 && (
-        <div
-          className="cooldown-overlay"
-          style={{
-            transform: `scaleY(${progress})`,
-          }}
-        />
-      )}
-      <span className="btn-content">
-        {def.label} + {def.gatherAmt}
-      </span>
-    </button>
-  );
-}
-
-function CraftButton({ recipe }: { recipe: RecipeDef }) {
-  const resources = useGameStore((s) => s.resources);
-  const cd = useGameStore((s) => s.cooldowns[recipe.id] ?? 0);
-  const craft = useGameStore((s) => s.craft);
-  const isDialogueActive = useGameStore((s) => s.isDialogueActive);
-  const purchasedUpgrades = useGameStore((s) => s.purchasedUpgrades);
-
-  const outputDef = RESOURCES[recipe.output.resId];
-  if (!outputDef) {
-    console.warn(`CraftButton: unknown resource id "${recipe.output.resId}" in recipe "${recipe.id}"`);
-    return null;
+  function hasNewDialogue(npcId: string): boolean {
+    const progress = npcDialogueProgress[npcId];
+    const completedNodeIds = progress?.completedNodeIds ?? [];
+    return getNextAvailableNode(npcId, flags, completedNodeIds) !== null;
   }
 
-  const effectiveCap = getEffectiveCap(recipe.output.resId, outputDef.cap, purchasedUpgrades);
-
-  const effectiveInputs = recipe.inputs.map(({ resId, amnt }) => ({
-    resId,
-    amnt: getEffectiveCraftCost(amnt, purchasedUpgrades),
-  }));
-
-  const canAfford = effectiveInputs.every(
-    ({ resId, amnt }) => resources[resId] >= amnt,
-  );
-  const atCap = resources[recipe.output.resId] + recipe.output.amnt > effectiveCap;
-  const disabled = isDialogueActive || cd > 0 || !canAfford || atCap;
-
-  const cooldownDuration = recipe.craftCd ?? 1;
-  const progress = Math.max(0, Math.min(1, cd / cooldownDuration));
-
-  return (
-    <button className="action-btn" onClick={() => craft(recipe.id)} disabled={disabled}>
-      {cd > 0 && (
-        <div
-          className="cooldown-overlay"
-          style={{
-            transform: `scaleY(${progress})`,
-          }}
-        />
-      )}
-      <span className="btn-content">
-        <span>{outputDef.label}</span>
-        <CostChips costs={effectiveInputs} />
-      </span>
-    </button>
-  );
-}
-
-function UpgradeButton({ upgradeId }: { upgradeId: string }) {
-  const upgrade = UPGRADES[upgradeId];
-  const resources = useGameStore((s) => s.resources);
-  const purchasedUpgrades = useGameStore((s) => s.purchasedUpgrades);
-  const purchaseUpgrade = useGameStore((s) => s.purchaseUpgrade);
-  const isDialogueActive = useGameStore((s) => s.isDialogueActive);
-
-  if (
-    upgrade.requiresUpgrade &&
-    !(purchasedUpgrades[upgrade.requiresUpgrade] > 0)
-  ) {
-    return null;
+  function handlePortraitClick(npc: UnlockEvent, isUnlocked: boolean) {
+    if (!isUnlocked) {
+      setShakingId(npc.id);
+      setTimeout(() => setShakingId(null), 400);
+      return;
+    }
+    selectNpc(npc.id);
   }
 
-  const currentCount = purchasedUpgrades[upgradeId] || 0;
-  if (currentCount >= upgrade.maxPurchases) return null;
-
-  const cost = upgrade.cost(currentCount);
-  const canAfford = cost.every(({ resId, amnt }) => resources[resId] >= amnt);
-  const disabled = isDialogueActive || !canAfford;
-
   return (
-    <button className="action-btn upgrade-btn" onClick={() => purchaseUpgrade(upgradeId)} disabled={disabled}>
-      <span className="upgrade-top-row">
-        <span className="upgrade-label">{upgrade.label}</span>
-        <span className="upgrade-level">Lv. {currentCount}/{upgrade.maxPurchases}</span>
-      </span>
-      <CostChips costs={cost} />
-    </button>
+    <div className="npc-portraits">
+      {NPCS.map((npc) => {
+        const isUnlocked = unlockedNpcs.some((u) => u.id === npc.id);
+        const isSelected = selectedNpcId === npc.id;
+        const isShaking = shakingId === npc.id;
+        const hasNew = isUnlocked && hasNewDialogue(npc.id);
+
+        return (
+          <button
+            key={npc.id}
+            className={`npc-portrait ${isSelected ? "npc-portrait--selected" : ""} ${isShaking ? "npc-portrait--shake" : ""} ${hasNew ? "npc-portrait--new" : ""}`}
+            title={npc.name}
+            disabled={isDialogueActive && !isSelected}
+            onClick={() => handlePortraitClick(npc, isUnlocked)}
+          >
+            <img
+              src={npc.portrait}
+              style={{
+                filter: isUnlocked ? "none" : "grayscale(100%)",
+              }}
+              alt={npc.name}
+            />
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -217,19 +117,9 @@ function WorkerAssignmentRow({ npc }: { npc: NpcDef }) {
 
 export default function Actions() {
   const unlockedNpcs = useGameStore((s) => s.unlockedNpcs);
-  const flags = useGameStore((s) => s.flags);
-  const gatherables = getGatherables(flags);
   const unlockedWorkers = NPCS.filter(
     (npc) => npc.role === "worker" && unlockedNpcs.some((u) => u.id === npc.id),
   );
-
-  const primaryGatherables = gatherables.filter((r) => !r.requireFlag);
-  const gatedGatherables = gatherables.filter((r) => r.requireFlag);
-
-  const recipesByTier = RECIPE_TIER_ORDER.map((tier) => ({
-    tier,
-    recipes: Object.values(RECIPES).filter((r) => getRecipeTier(r) === tier),
-  })).filter((group) => group.recipes.length > 0);
 
   const upgradesByCategory = UPGRADE_CATEGORY_ORDER.map((category) => ({
     category,
@@ -238,39 +128,9 @@ export default function Actions() {
 
   return (
     <div className="actions">
-      <h2>Actions</h2>
-
       <section>
-        <h3>Gather</h3>
-        <div className="btn-grid">
-          {primaryGatherables.map((r) => (
-            <GatherButton key={r.id} resourceId={r.id} />
-          ))}
-        </div>
-        {gatedGatherables.length > 0 && (
-          <>
-            <div className="tier-divider" />
-            <div className="btn-grid">
-              {gatedGatherables.map((r) => (
-                <GatherButton key={r.id} resourceId={r.id} />
-              ))}
-            </div>
-          </>
-        )}
-      </section>
-
-      <section>
-        <h3>Craft</h3>
-        {recipesByTier.map((group, i) => (
-          <div key={group.tier}>
-            {i > 0 && <div className="tier-divider" />}
-            <div className="btn-grid">
-              {group.recipes.map((recipe) => (
-                <CraftButton key={recipe.id} recipe={recipe} />
-              ))}
-            </div>
-          </div>
-        ))}
+        <h3>Talk</h3>
+        <NpcPicker />
       </section>
 
       {unlockedWorkers.length > 0 && (
@@ -286,16 +146,16 @@ export default function Actions() {
 
       <section>
         <h3>Upgrades</h3>
-        {upgradesByCategory.map((group, i) => (
-          <div key={group.category}>
-            {i > 0 && <div className="tier-divider" />}
-            <div className="btn-grid">
+        <div className="upgrade-row">
+          {upgradesByCategory.map((group, i) => (
+            <Fragment key={group.category}>
+              {i > 0 && <div className="upgrade-gap" />}
               {group.upgrades.map((upgrade) => (
                 <UpgradeButton key={upgrade.id} upgradeId={upgrade.id} />
               ))}
-            </div>
-          </div>
-        ))}
+            </Fragment>
+          ))}
+        </div>
       </section>
     </div>
   );

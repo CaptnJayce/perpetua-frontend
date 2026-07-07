@@ -9,6 +9,11 @@ import {
   getEffectiveCraftCost,
 } from "./data/upgrades";
 import { SPECIALIZATIONS } from "./data/specializations";
+import {
+  getCurrentDialogue,
+  getNextAvailableNode,
+  type DialogueOption,
+} from "./data/dialogue";
 import { checkUnlocks } from "./systems/unlocker";
 import { applyGather, applyCraft } from "./systems/production";
 import {
@@ -33,6 +38,15 @@ export interface NpcDialogueProgress {
   history: { nodeId: string; npcText: string; playerResponse: string }[];
 }
 
+export interface NpcDialogueSessionState {
+  currentNodeId: string;
+  completed: boolean;
+  // Index into the store's lifetime history for this NPC marking where the
+  // current view should start reading from — 0 for a full replay, or the
+  // history length at session-start so only the live session's exchanges show.
+  historyStartIndex: number;
+}
+
 interface GameState {
   resources: Record<string, number>;
   cooldowns: Record<string, number>;
@@ -47,6 +61,9 @@ interface GameState {
   workerCooldowns: Record<string, number>;
   specialization: string | null;
   user: AuthUser | null;
+  selectedNpcId: string | null;
+  npcDialogueStates: Record<string, NpcDialogueSessionState>;
+  dialogueHistoryIndex: number;
 
   tick: (delta: number) => void;
   gather: (resourceId: string) => void;
@@ -61,11 +78,14 @@ interface GameState {
   toggleDebugMode: () => void;
   emptyResources: () => void;
   debugGrantGenerator: () => void;
-  setDialogueActive: (active: boolean) => void;
   purchaseUpgrade: (upgradeId: string) => void;
   assignWorker: (workerId: string, assignment: WorkerAssignment | null) => void;
   setUser: (user: AuthUser | null) => void;
   hydrateSave: (saved: SavedGameFields) => void;
+  selectNpc: (npcId: string) => void;
+  submitDialogueOption: (option: DialogueOption) => void;
+  closeDialogueView: () => void;
+  setDialogueHistoryIndex: (index: number) => void;
 }
 
 const initialResources = Object.fromEntries(
@@ -90,9 +110,30 @@ function applyNpcUnlocks(
     const workerCount = unlockedNpcs.filter(
       (u) => NPCS.find((n) => n.id === u.id)?.role === "worker",
     ).length;
+
+    // Newly unlocked NPCs can arrive from any game system (tick, gather,
+    // craft, flags) — auto-select the latest one and, if they have dialogue
+    // ready, open it immediately.
+    const newNpc = newNpcs[newNpcs.length - 1];
+    const nextNode = getNextAvailableNode(newNpc.id, state.flags, []);
+
     set({
       unlockedNpcs,
       resources: { ...state.resources, workers: workerCount },
+      selectedNpcId: newNpc.id,
+      dialogueHistoryIndex: 0,
+      isDialogueActive: nextNode ? true : state.isDialogueActive,
+      npcDialogueStates: nextNode
+        ? {
+            ...state.npcDialogueStates,
+            [newNpc.id]: {
+              currentNodeId: nextNode,
+              completed: false,
+              historyStartIndex:
+                state.npcDialogueProgress[newNpc.id]?.history.length ?? 0,
+            },
+          }
+        : state.npcDialogueStates,
     });
   }
 }
@@ -165,6 +206,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   workerCooldowns: {},
   specialization: null,
   user: null,
+  selectedNpcId: null,
+  npcDialogueStates: {},
+  dialogueHistoryIndex: 0,
 
   tick: (delta) => {
     const {
@@ -368,6 +412,98 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
   },
 
+  selectNpc: (npcId) => {
+    const { npcDialogueProgress, flags, npcDialogueStates } = get();
+    const progress = npcDialogueProgress[npcId];
+    const completedNodeIds = progress?.completedNodeIds ?? [];
+    const nextNode = getNextAvailableNode(npcId, flags, completedNodeIds);
+
+    if (nextNode) {
+      set({
+        isDialogueActive: true,
+        selectedNpcId: npcId,
+        dialogueHistoryIndex: 0,
+        npcDialogueStates: {
+          ...npcDialogueStates,
+          [npcId]: {
+            currentNodeId: nextNode,
+            completed: false,
+            historyStartIndex: progress?.history.length ?? 0,
+          },
+        },
+      });
+    } else {
+      // No new dialogue — show the full history replay instead.
+      set({
+        isDialogueActive: false,
+        selectedNpcId: npcId,
+        dialogueHistoryIndex: 0,
+        npcDialogueStates: {
+          ...npcDialogueStates,
+          [npcId]: {
+            currentNodeId: npcDialogueStates[npcId]?.currentNodeId ?? "end",
+            completed: true,
+            historyStartIndex: 0,
+          },
+        },
+      });
+    }
+  },
+
+  submitDialogueOption: (option) => {
+    const { selectedNpcId, npcDialogueStates } = get();
+    if (!selectedNpcId) return;
+
+    const dialogueState = npcDialogueStates[selectedNpcId];
+    const currentNodeId = dialogueState?.currentNodeId ?? "intro";
+    const currentNode = getCurrentDialogue(selectedNpcId, currentNodeId);
+    if (!currentNode) return;
+
+    if (option.setFlag) get().setFlag(option.setFlag);
+
+    const nextNodeId = option.nextNodeId;
+    const completed = !nextNodeId || nextNodeId === "end";
+
+    get().addDialogueHistory(selectedNpcId, {
+      nodeId: currentNode.id,
+      npcText: currentNode.text,
+      playerResponse: option.text,
+    });
+
+    const prevState = get().npcDialogueStates[selectedNpcId] ?? {
+      currentNodeId: "intro",
+      completed: false,
+      historyStartIndex: 0,
+    };
+    set({
+      npcDialogueStates: {
+        ...get().npcDialogueStates,
+        [selectedNpcId]: {
+          ...prevState,
+          currentNodeId: nextNodeId || "end",
+          completed,
+        },
+      },
+    });
+
+    if (completed) {
+      const startIndex = dialogueState?.historyStartIndex ?? 0;
+      const sessionHistory =
+        get().npcDialogueProgress[selectedNpcId]?.history ?? [];
+      const firstHistoryEntry = sessionHistory[startIndex];
+      if (firstHistoryEntry) {
+        get().completeDialogueNode(selectedNpcId, firstHistoryEntry.nodeId);
+      }
+      set({ selectedNpcId: null, isDialogueActive: false });
+    }
+  },
+
+  closeDialogueView: () => {
+    set({ selectedNpcId: null, dialogueHistoryIndex: 0, isDialogueActive: false });
+  },
+
+  setDialogueHistoryIndex: (index) => set({ dialogueHistoryIndex: index }),
+
   toggleDebugMode: () => {
     const { debugMode, resources, purchasedUpgrades } = get();
     const nextDebugMode = !debugMode;
@@ -398,10 +534,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     withUnlocks(get, set, {
       resources: { ...resources, pkg: 1, pks: 1 },
     });
-  },
-
-  setDialogueActive: (active) => {
-    set({ isDialogueActive: active });
   },
 
   purchaseUpgrade: (upgradeId) => {

@@ -143,3 +143,9 @@ export const RESOURCES: Record<string, ResourceDef> = {
     requireFlag: "phase2_resources_unlocked",
   },
 };
+
+export function getGatherables(flags: string[]) {
+  return Object.values(RESOURCES).filter(
+    (r) => r.gatherAmt !== undefined && (!r.requireFlag || flags.includes(r.requireFlag)),
+  );
+}
