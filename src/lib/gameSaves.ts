@@ -12,6 +12,7 @@ export type SavedGameFields = Pick<
   | "purchasedUpgrades"
   | "workerAssignments"
   | "workerCooldowns"
+  | "specialization"
 >;
 
 interface GameSaveRow {
@@ -24,6 +25,7 @@ interface GameSaveRow {
   purchased_upgrades: SavedGameFields["purchasedUpgrades"];
   worker_assignments: SavedGameFields["workerAssignments"];
   worker_cooldowns: SavedGameFields["workerCooldowns"];
+  specialization: SavedGameFields["specialization"];
 }
 
 export async function loadGameSave(
@@ -34,7 +36,7 @@ export async function loadGameSave(
   const { data, error } = await supabase
     .from("game_saves")
     .select(
-      "resources, cooldowns, unlocked_npcs, unlocked_recipes, flags, npc_dialogue_progress, purchased_upgrades, worker_assignments, worker_cooldowns",
+      "resources, cooldowns, unlocked_npcs, unlocked_recipes, flags, npc_dialogue_progress, purchased_upgrades, worker_assignments, worker_cooldowns, specialization",
     )
     .eq("user_id", userId)
     .single<GameSaveRow>();
@@ -51,6 +53,7 @@ export async function loadGameSave(
     purchasedUpgrades: data.purchased_upgrades,
     workerAssignments: data.worker_assignments,
     workerCooldowns: data.worker_cooldowns,
+    specialization: data.specialization,
   };
 }
 
@@ -72,6 +75,7 @@ export async function saveGameState(
       purchased_upgrades: state.purchasedUpgrades,
       worker_assignments: state.workerAssignments,
       worker_cooldowns: state.workerCooldowns,
+      specialization: state.specialization,
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", userId);

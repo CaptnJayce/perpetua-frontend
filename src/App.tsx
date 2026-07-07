@@ -7,10 +7,12 @@ import { useGameStore } from "./store";
 import Resources from "./components/Resources";
 import Dialogue from "./components/Dialogue";
 import Actions from "./components/Actions";
+import SpecializationSelect from "./components/SpecializationSelect";
 
 export default function App() {
     const toggleDebugMode = useGameStore((s) => s.toggleDebugMode);
     const emptyResources = useGameStore((s) => s.emptyResources);
+    const debugGrantGenerator = useGameStore((s) => s.debugGrantGenerator);
 
     useEffect(() => {
         const TICK_MS = 100;
@@ -30,13 +32,17 @@ export default function App() {
                 toggleDebugMode();
             } else if (e.key === "E") {
                 emptyResources();
+            } else if (e.key === "W") {
+                debugGrantGenerator();
             }
         };
         document.addEventListener("keydown", handler);
         return () => document.removeEventListener("keydown", handler);
-    }, [toggleDebugMode, emptyResources]);
+    }, [toggleDebugMode, emptyResources, debugGrantGenerator]);
 
     return (
+        <>
+        <SpecializationSelect />
         <Group className="main" orientation="horizontal">
             <Panel id="resources" className="panel" defaultSize="28%" minSize="18%" maxSize="45%">
                 <Resources />
@@ -54,5 +60,6 @@ export default function App() {
                 </Group>
             </Panel>
         </Group>
+        </>
     );
 }

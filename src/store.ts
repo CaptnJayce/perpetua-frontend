@@ -3,6 +3,7 @@ import { RESOURCES } from "./data/resources";
 import { RECIPES } from "./data/recipes";
 import { NPCS } from "./data/npcs";
 import { UPGRADES, getEffectiveCap, getEffectiveCooldown } from "./data/upgrades";
+import { SPECIALIZATIONS } from "./data/specializations";
 import { checkUnlocks } from "./systems/unlocker";
 import { applyGather, applyCraft } from "./systems/production";
 import {
@@ -39,12 +40,14 @@ interface GameState {
   purchasedUpgrades: Record<string, number>;
   workerAssignments: Record<string, WorkerAssignment | null>;
   workerCooldowns: Record<string, number>;
+  specialization: string | null;
   user: AuthUser | null;
 
   tick: (delta: number) => void;
   gather: (resourceId: string) => void;
   craft: (recipeId: string) => void;
   setFlag: (flag: string) => void;
+  chooseSpecialization: (specializationId: string) => void;
   completeDialogueNode: (npcId: string, nodeId: string) => void;
   addDialogueHistory: (
     npcId: string,
@@ -52,6 +55,7 @@ interface GameState {
   ) => void;
   toggleDebugMode: () => void;
   emptyResources: () => void;
+  debugGrantGenerator: () => void;
   setDialogueActive: (active: boolean) => void;
   purchaseUpgrade: (upgradeId: string) => void;
   assignWorker: (workerId: string, assignment: WorkerAssignment | null) => void;
@@ -154,6 +158,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   purchasedUpgrades: {},
   workerAssignments: {},
   workerCooldowns: {},
+  specialization: null,
   user: null,
 
   tick: (delta) => {
@@ -282,6 +287,19 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
+  chooseSpecialization: (specializationId) => {
+    const { specialization, flags } = get();
+    if (specialization) return;
+
+    const spec = SPECIALIZATIONS.find((s) => s.id === specializationId);
+    if (!spec) return;
+
+    set({
+      specialization: specializationId,
+      flags: flags.includes(spec.flag) ? flags : [...flags, spec.flag],
+    });
+  },
+
   completeDialogueNode: (npcId, nodeId) => {
     const { npcDialogueProgress } = get();
     const prev = npcDialogueProgress[npcId] || {
@@ -340,6 +358,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   emptyResources: () => {
     if (!get().debugMode) return;
     set({ resources: { ...initialResources } });
+  },
+
+  debugGrantGenerator: () => {
+    const { debugMode, resources } = get();
+    if (!debugMode) return;
+    withUnlocks(get, set, {
+      resources: { ...resources, pkg: 1, pks: 1 },
+    });
   },
 
   setDialogueActive: (active) => {
