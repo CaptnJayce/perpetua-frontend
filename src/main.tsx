@@ -16,13 +16,23 @@ function Root() {
   const user = useGameStore((s) => s.user);
   const setUser = useGameStore((s) => s.setUser);
   const hydrateSave = useGameStore((s) => s.hydrateSave);
+  const markSaveResolved = useGameStore((s) => s.markSaveResolved);
 
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase) {
+      // No persistence configured — nothing to wait on, treat as a fresh run.
+      markSaveResolved(false);
+      return;
+    }
 
     supabase.auth.getSession().then(({ data }) => {
       const sessionUser = data.session?.user;
-      setUser(sessionUser ? { id: sessionUser.id, email: sessionUser.email ?? "" } : null);
+      if (sessionUser) {
+        setUser({ id: sessionUser.id, email: sessionUser.email ?? "" });
+      } else {
+        setUser(null);
+        markSaveResolved(false);
+      }
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -30,14 +40,15 @@ function Root() {
     });
 
     return () => listener.subscription.unsubscribe();
-  }, [setUser]);
+  }, [setUser, markSaveResolved]);
 
   useEffect(() => {
     if (!user) return;
     loadGameSave(user.id).then((saved) => {
       if (saved) hydrateSave(saved);
+      else markSaveResolved(false);
     });
-  }, [user, hydrateSave]);
+  }, [user, hydrateSave, markSaveResolved]);
 
   useEffect(() => {
     if (!user) return;

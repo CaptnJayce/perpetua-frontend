@@ -3,7 +3,19 @@
   justify-content: center;
   align-items: center;
   border-bottom: solid;
-  border-width: 2px;
+  border-width: 1px;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.nav--hidden {
+  pointer-events: none;
+}
+
+.nav--visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .nav-elements-left,
@@ -13,8 +25,8 @@
   justify-content: center;
   align-items: center;
   width: 30%;
-  font-size: 24px;
-  padding: 10px 0 10px 0;
+  font-size: 13px;
+  padding: 4px 0;
 }
 
 .debug-badge {

@@ -64,6 +64,8 @@ interface GameState {
   selectedNpcId: string | null;
   npcDialogueStates: Record<string, NpcDialogueSessionState>;
   dialogueHistoryIndex: number;
+  saveStatus: "pending" | "resolved";
+  isReturningPlayer: boolean;
 
   tick: (delta: number) => void;
   gather: (resourceId: string) => void;
@@ -82,6 +84,7 @@ interface GameState {
   assignWorker: (workerId: string, assignment: WorkerAssignment | null) => void;
   setUser: (user: AuthUser | null) => void;
   hydrateSave: (saved: SavedGameFields) => void;
+  markSaveResolved: (foundSave: boolean) => void;
   selectNpc: (npcId: string) => void;
   submitDialogueOption: (option: DialogueOption) => void;
   closeDialogueView: () => void;
@@ -208,6 +211,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   user: null,
   selectedNpcId: null,
   npcDialogueStates: {},
+  saveStatus: "pending",
+  isReturningPlayer: false,
   dialogueHistoryIndex: 0,
 
   tick: (delta) => {
@@ -583,5 +588,9 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   setUser: (user) => set({ user }),
 
-  hydrateSave: (saved) => set(saved),
+  markSaveResolved: (foundSave) =>
+    set({ saveStatus: "resolved", isReturningPlayer: foundSave }),
+
+  hydrateSave: (saved) =>
+    set({ ...saved, saveStatus: "resolved", isReturningPlayer: true }),
 }));

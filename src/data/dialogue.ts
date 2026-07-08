@@ -29,12 +29,12 @@ export const DIALOGUE_TREES: Record<string, DialogueTree> = {
       },
       npc_display: {
         id: "npc_display",
-        text: "On your right, you'll see a display of people you have spoken with whilst at work - transcripts of your conversations will be stored physically and can be accessed by tapping their portrait, also their portraits should glow green if they ever have something to say.",
+        text: "Just below me, you'll see an 'Actions' dashboard, showing you upgrades, worker management, and a list of people you have spoken with whilst at work - transcripts of your conversations will be stored physically and can be accessed by tapping their portrait, also their portraits should glow green if they ever have something to say.",
         options: [{ text: "Continue", nextNodeId: "resources_dashboard" }],
       },
       resources_dashboard: {
         id: "resources_dashboard",
-        text: "On your left is your resources dashboard, showing what you've collected and what you should be working towards. The bottom is where you'll be able to acquire resources and assign workers. It's a lot simpler than it looks, just a lot of knobs, dials, and displays to keep track of everything.",
+        text: "On your left is your 'Resources' dashboard, showing what you can collect, what you've collected, and what you should be working towards. It's a lot simpler than it looks, just a lot of knobs, dials, and displays to keep track of everything.",
         options: [{ text: "Continue", nextNodeId: "workers_intro" }],
       },
       workers_intro: {

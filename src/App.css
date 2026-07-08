@@ -59,3 +59,22 @@
     top: 50%;
     transform: translate(-50%, -50%);
 }
+
+.resize-handle--hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.intro-reveal {
+    height: 100%;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.intro-reveal--visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}

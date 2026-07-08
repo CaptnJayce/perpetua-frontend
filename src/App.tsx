@@ -3,6 +3,7 @@ import "./App.css";
 import { useEffect } from "react";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { useGameStore } from "./store";
+import { INTRO_NPC_ID, useIntroRevealLevel } from "./lib/introReveal";
 
 import Resources from "./components/Resources";
 import Dialogue from "./components/Dialogue";
@@ -13,6 +14,17 @@ export default function App() {
   const toggleDebugMode = useGameStore((s) => s.toggleDebugMode);
   const emptyResources = useGameStore((s) => s.emptyResources);
   const debugGrantGenerator = useGameStore((s) => s.debugGrantGenerator);
+  const selectedNpcId = useGameStore((s) => s.selectedNpcId);
+  const selectNpc = useGameStore((s) => s.selectNpc);
+  const saveStatus = useGameStore((s) => s.saveStatus);
+  const isReturningPlayer = useGameStore((s) => s.isReturningPlayer);
+  const revealLevel = useIntroRevealLevel();
+
+  useEffect(() => {
+    if (saveStatus !== "resolved" || isReturningPlayer) return;
+    if (revealLevel === "full" || selectedNpcId) return;
+    selectNpc(INTRO_NPC_ID);
+  }, [saveStatus, isReturningPlayer, revealLevel, selectedNpcId, selectNpc]);
 
   useEffect(() => {
     const TICK_MS = 100;
@@ -40,6 +52,9 @@ export default function App() {
     return () => document.removeEventListener("keydown", handler);
   }, [toggleDebugMode, emptyResources, debugGrantGenerator]);
 
+  const resourcesRevealed = revealLevel === "resources" || revealLevel === "full";
+  const actionsRevealed = revealLevel !== "none";
+
   return (
     <>
       <SpecializationSelect />
@@ -51,9 +66,13 @@ export default function App() {
           minSize="18%"
           maxSize="45%"
         >
-          <Resources />
+          <div className={`intro-reveal ${resourcesRevealed ? "intro-reveal--visible" : ""}`}>
+            <Resources />
+          </div>
         </Panel>
-        <Separator className="resize-handle resize-handle--vertical" />
+        <Separator
+          className={`resize-handle resize-handle--vertical ${resourcesRevealed ? "" : "resize-handle--hidden"}`}
+        />
         <Panel id="right" className="panel">
           <Group orientation="vertical">
             <Panel
@@ -64,14 +83,18 @@ export default function App() {
             >
               <Dialogue />
             </Panel>
-            <Separator className="resize-handle resize-handle--horizontal" />
+            <Separator
+              className={`resize-handle resize-handle--horizontal ${actionsRevealed ? "" : "resize-handle--hidden"}`}
+            />
             <Panel
               id="actions"
               className="panel"
               defaultSize="30%"
               minSize="20%"
             >
-              <Actions />
+              <div className={`intro-reveal ${actionsRevealed ? "intro-reveal--visible" : ""}`}>
+                <Actions />
+              </div>
             </Panel>
           </Group>
         </Panel>
