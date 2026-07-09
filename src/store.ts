@@ -67,6 +67,8 @@ interface GameState {
   dialogueHistoryIndex: number;
   saveStatus: "pending" | "resolved";
   isReturningPlayer: boolean;
+  questionModeActive: boolean;
+  activeLorePopup: { id: string; x: number; y: number } | null;
 
   tick: (delta: number) => void;
   gather: (resourceId: string) => void;
@@ -90,6 +92,9 @@ interface GameState {
   submitDialogueOption: (option: DialogueOption) => void;
   closeDialogueView: () => void;
   setDialogueHistoryIndex: (index: number) => void;
+  toggleQuestionMode: () => void;
+  showLorePopup: (id: string, x: number, y: number) => void;
+  closeLorePopup: () => void;
 }
 
 const initialResources = Object.fromEntries(
@@ -223,6 +228,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   saveStatus: "pending",
   isReturningPlayer: false,
   dialogueHistoryIndex: 0,
+  questionModeActive: false,
+  activeLorePopup: null,
 
   tick: (delta) => {
     const {
@@ -603,4 +610,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   hydrateSave: (saved) =>
     set({ ...saved, saveStatus: "resolved", isReturningPlayer: true }),
+
+  toggleQuestionMode: () =>
+    set((s) => ({ questionModeActive: !s.questionModeActive, activeLorePopup: null })),
+
+  showLorePopup: (id, x, y) => set({ activeLorePopup: { id, x, y } }),
+
+  closeLorePopup: () => set({ activeLorePopup: null }),
 }));

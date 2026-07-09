@@ -82,12 +82,7 @@ export default function Dialogue() {
                   </p>
                 </div>
               ) : (
-                <p>
-                  {currentNode?.requireFlag &&
-                    !flags.includes(currentNode.requireFlag)
-                    ? fullNpc.description
-                    : currentNode?.text ?? fullNpc.description}
-                </p>
+                <p>{currentNode?.text ?? ""}</p>
               )}
             </div>
           </div>

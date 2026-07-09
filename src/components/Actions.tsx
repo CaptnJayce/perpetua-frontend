@@ -25,6 +25,8 @@ function NpcPicker() {
   const selectedNpcId = useGameStore((s) => s.selectedNpcId);
   const selectNpc = useGameStore((s) => s.selectNpc);
   const isDialogueActive = useGameStore((s) => s.isDialogueActive);
+  const questionModeActive = useGameStore((s) => s.questionModeActive);
+  const showLorePopup = useGameStore((s) => s.showLorePopup);
   const [shakingId, setShakingId] = useState<string | null>(null);
 
   function hasNewDialogue(npcId: string): boolean {
@@ -33,7 +35,11 @@ function NpcPicker() {
     return getNextAvailableNode(npcId, flags, completedNodeIds) !== null;
   }
 
-  function handlePortraitClick(npc: UnlockEvent, isUnlocked: boolean) {
+  function handlePortraitClick(npc: UnlockEvent, isUnlocked: boolean, e: React.MouseEvent) {
+    if (questionModeActive) {
+      showLorePopup(npc.id, e.clientX, e.clientY);
+      return;
+    }
     if (!isUnlocked) {
       setShakingId(npc.id);
       setTimeout(() => setShakingId(null), 400);
@@ -55,8 +61,8 @@ function NpcPicker() {
             key={npc.id}
             className={`npc-portrait ${isSelected ? "npc-portrait--selected" : ""} ${isShaking ? "npc-portrait--shake" : ""} ${hasNew ? "npc-portrait--new" : ""}`}
             title={npc.name}
-            disabled={isDialogueActive && !isSelected}
-            onClick={() => handlePortraitClick(npc, isUnlocked)}
+            disabled={isDialogueActive && !isSelected && !questionModeActive}
+            onClick={(e) => handlePortraitClick(npc, isUnlocked, e)}
           >
             <img
               src={npc.portrait}

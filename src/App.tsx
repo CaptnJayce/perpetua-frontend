@@ -9,6 +9,7 @@ import Resources from "./components/Resources";
 import Dialogue from "./components/Dialogue";
 import Actions from "./components/Actions";
 import SpecializationSelect from "./components/SpecializationSelect";
+import LorePopup from "./components/LorePopup";
 
 export default function App() {
   const toggleDebugMode = useGameStore((s) => s.toggleDebugMode);
@@ -18,7 +19,12 @@ export default function App() {
   const selectNpc = useGameStore((s) => s.selectNpc);
   const saveStatus = useGameStore((s) => s.saveStatus);
   const isReturningPlayer = useGameStore((s) => s.isReturningPlayer);
+  const questionModeActive = useGameStore((s) => s.questionModeActive);
   const revealLevel = useIntroRevealLevel();
+
+  useEffect(() => {
+    document.body.classList.toggle("question-mode", questionModeActive);
+  }, [questionModeActive]);
 
   useEffect(() => {
     if (saveStatus !== "resolved" || isReturningPlayer) return;
@@ -57,6 +63,7 @@ export default function App() {
 
   return (
     <>
+      <LorePopup />
       <SpecializationSelect />
       <Group className="main" orientation="horizontal">
         <Panel

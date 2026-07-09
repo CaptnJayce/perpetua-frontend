@@ -29,6 +29,16 @@
   padding: 4px 0;
 }
 
+.question-mode-toggle {
+  margin-left: 8px;
+  font-weight: bold;
+}
+
+.question-mode-toggle--active {
+  background: var(--brass);
+  color: var(--iron);
+}
+
 .debug-badge {
   background: #d32f2f;
   color: #fff;

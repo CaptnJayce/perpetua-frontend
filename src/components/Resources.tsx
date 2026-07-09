@@ -34,9 +34,6 @@ function getRecipesFor(resId: string): RecipeDef[] {
   return Object.values(RECIPES).filter((r) => r.output.resId === resId);
 }
 
-// A resource belongs to whichever department produces it, found via its
-// (sole, in practice) recipe — pkg/pks and gathered base resources have no
-// producing recipe and so no department.
 function getDepartmentIdForResource(resId: string): string | undefined {
   const recipe = getRecipesFor(resId)[0];
   return recipe ? getDepartmentForRecipe(recipe.id)?.id : undefined;
@@ -46,10 +43,18 @@ function ResourceRow({ def, resources, purchasedUpgrades }: ResourceRowProps) {
   const effectiveCap = getEffectiveCap(def.id, def.cap, purchasedUpgrades);
   const recipes = getRecipesFor(def.id);
   const hasActions = def.gatherAmt !== undefined || recipes.length > 0;
+  const questionModeActive = useGameStore((s) => s.questionModeActive);
+  const showLorePopup = useGameStore((s) => s.showLorePopup);
 
   return (
     <div key={def.id} className="resource-info">
-      <ResourceIcon icon={def.icon} size={RESOURCE_ICON_SIZE} />
+      <span
+        onClick={
+          questionModeActive ? (e) => showLorePopup(def.id, e.clientX, e.clientY) : undefined
+        }
+      >
+        <ResourceIcon icon={def.icon} size={RESOURCE_ICON_SIZE} />
+      </span>
       <div className="resource-text">
         <div className="resource-name">{def.label}</div>
         <div className="resource-amount">
@@ -75,6 +80,8 @@ export default function Resources() {
   const resources = useGameStore((s) => s.resources);
   const purchasedUpgrades = useGameStore((s) => s.purchasedUpgrades);
   const flags = useGameStore((s) => s.flags);
+  const questionModeActive = useGameStore((s) => s.questionModeActive);
+  const showLorePopup = useGameStore((s) => s.showLorePopup);
 
   const visibleResources = Object.values(RESOURCES).filter(
     (def) => !def.requireFlag || flags.includes(def.requireFlag),
@@ -178,8 +185,16 @@ export default function Resources() {
           <h3>Quest Items</h3>
           {questResources.map((def) => (
             <p key={def.id} className="resource-info">
-              <ResourceIcon icon={def.icon} size={RESOURCE_ICON_SIZE} /> {def.label}:{" "}
-              {Math.floor(resources[def.id])} / {def.cap}
+              <span
+                onClick={
+                  questionModeActive
+                    ? (e) => showLorePopup(def.id, e.clientX, e.clientY)
+                    : undefined
+                }
+              >
+                <ResourceIcon icon={def.icon} size={RESOURCE_ICON_SIZE} />
+              </span>{" "}
+              {def.label}: {Math.floor(resources[def.id])} / {def.cap}
             </p>
           ))}
         </>

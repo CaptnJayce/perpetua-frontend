@@ -8,9 +8,6 @@ export type WorkerAssignment =
   | { type: "gather"; targetId: string }
   | { type: "department"; departmentId: string };
 
-// Fallback pace for a department-assigned worker when nothing in that
-// department is currently affordable, so it retries at a sane cadence
-// instead of busy-checking every tick.
 const WORKER_CRAFT_INTERVAL = 3;
 
 export function isValidAssignment(
@@ -24,10 +21,6 @@ export function isValidAssignment(
   return dept !== undefined && isDepartmentBuilt(dept, purchasedUpgrades);
 }
 
-// Picks the first recipe in the department (in declared order) whose inputs
-// are currently affordable. Deterministic priority, not round-robin — a
-// department with one bottleneck ingredient will lean on whichever recipe
-// is listed first among the ones still affordable.
 function resolveDepartmentTarget(
   departmentId: string,
   resources: Record<string, number>,
@@ -81,9 +74,6 @@ export function tickWorkers({
       const produced = applyGather(nextResources, assignment.targetId, purchasedUpgrades);
       if (produced) nextResources = produced;
 
-      // Reset the pace whether or not production succeeded, so a blocked
-      // worker (at cap) retries at the same cadence instead of busy-checking
-      // every tick.
       const def = RESOURCES[assignment.targetId];
       nextCooldowns[workerId] = getEffectiveCooldown(def?.gatherCd ?? 1, purchasedUpgrades);
       continue;
@@ -99,8 +89,6 @@ export function tickWorkers({
       if (produced) nextResources = produced;
       nextCooldowns[workerId] = RECIPES[targetRecipeId]?.craftCd ?? WORKER_CRAFT_INTERVAL;
     } else {
-      // Nothing in the department is affordable right now — retry at the
-      // fallback cadence instead of busy-checking every tick.
       nextCooldowns[workerId] = WORKER_CRAFT_INTERVAL;
     }
   }

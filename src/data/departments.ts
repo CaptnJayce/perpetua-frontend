@@ -5,8 +5,6 @@ export interface DepartmentDef {
   label: string;
   description: string;
   recipeIds: string[];
-  // Upgrade id that builds this department. Undefined means the department
-  // is open from the start (the Foundry — tier-1 crafting needs no gate).
   unlockUpgradeId?: string;
 }
 
@@ -56,8 +54,6 @@ export function getDepartmentForRecipe(
   );
 }
 
-// Recipes with no department (the pkg/pks milestone crafts) are always
-// unlocked — they're gated naturally by needing department output as inputs.
 export function isRecipeUnlocked(
   recipeId: string,
   purchasedUpgrades: Record<string, number>,
@@ -67,8 +63,6 @@ export function isRecipeUnlocked(
   return isDepartmentBuilt(dept, purchasedUpgrades);
 }
 
-// Sanity check that every unlockUpgradeId actually resolves to a real
-// upgrade — a typo here would silently soft-lock a department forever.
 for (const dept of Object.values(DEPARTMENTS)) {
   if (dept.unlockUpgradeId && !UPGRADES[dept.unlockUpgradeId]) {
     throw new Error(

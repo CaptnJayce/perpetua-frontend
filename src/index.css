@@ -39,6 +39,11 @@ body {
     animation: root-fade-in 1s ease;
 }
 
+body.question-mode,
+body.question-mode * {
+    cursor: help !important;
+}
+
 @keyframes root-fade-in {
     from {
         opacity: 0;
