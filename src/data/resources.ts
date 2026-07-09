@@ -11,6 +11,7 @@ export type ResourceCategory =
   | "base"
   | "passive"
   | "crafted"
+  | "assembly"
   | "worker"
   | "milestone"
   | "quest";
@@ -96,6 +97,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
     category: "crafted",
     displayAsInt: true,
     icon: propeller,
+    requireFlag: "assembly_floor_built",
   },
   vent: {
     id: "vent",
@@ -104,6 +106,82 @@ export const RESOURCES: Record<string, ResourceDef> = {
     category: "crafted",
     displayAsInt: true,
     icon: vent,
+    requireFlag: "assembly_floor_built",
+  },
+  steamDust: {
+    id: "steamDust",
+    label: "Steam Dust",
+    cap: 100,
+    category: "base",
+    gatherAmt: 5,
+    gatherCd: 5,
+    requireFlag: "boiler_room_built",
+  },
+  copperWire: {
+    id: "copperWire",
+    label: "Copper Wire",
+    cap: 75,
+    category: "base",
+    gatherAmt: 4,
+    gatherCd: 6,
+    requireFlag: "boiler_room_built",
+  },
+  glass: {
+    id: "glass",
+    label: "Glass",
+    cap: 75,
+    category: "base",
+    gatherAmt: 4,
+    gatherCd: 5,
+    requireFlag: "boiler_room_built",
+  },
+  boiler: {
+    id: "boiler",
+    label: "Boiler",
+    cap: 30,
+    category: "assembly",
+    displayAsInt: true,
+    requireFlag: "boiler_room_built",
+  },
+  piston: {
+    id: "piston",
+    label: "Piston",
+    cap: 30,
+    category: "assembly",
+    displayAsInt: true,
+    requireFlag: "boiler_room_built",
+  },
+  pressureValve: {
+    id: "pressureValve",
+    label: "Pressure Valve",
+    cap: 30,
+    category: "assembly",
+    displayAsInt: true,
+    requireFlag: "boiler_room_built",
+  },
+  coil: {
+    id: "coil",
+    label: "Coil",
+    cap: 30,
+    category: "assembly",
+    displayAsInt: true,
+    requireFlag: "boiler_room_built",
+  },
+  flywheel: {
+    id: "flywheel",
+    label: "Flywheel",
+    cap: 30,
+    category: "assembly",
+    displayAsInt: true,
+    requireFlag: "boiler_room_built",
+  },
+  gauge: {
+    id: "gauge",
+    label: "Gauge",
+    cap: 30,
+    category: "assembly",
+    displayAsInt: true,
+    requireFlag: "boiler_room_built",
   },
   workers: {
     id: "workers",

@@ -9,6 +9,7 @@ import {
   getEffectiveCraftCost,
 } from "./data/upgrades";
 import { SPECIALIZATIONS } from "./data/specializations";
+import { isRecipeUnlocked } from "./data/departments";
 import {
   getCurrentDialogue,
   getNextAvailableNode,
@@ -180,6 +181,14 @@ const CONDITIONAL_FLAGS: {
     flag: "rubber_unlocked",
     condition: (s) => (s.purchasedUpgrades["unlock-rubber-gathering"] ?? 0) > 0,
   },
+  {
+    flag: "assembly_floor_built",
+    condition: (s) => (s.purchasedUpgrades["build-assembly-floor"] ?? 0) > 0,
+  },
+  {
+    flag: "boiler_room_built",
+    condition: (s) => (s.purchasedUpgrades["build-boiler-room"] ?? 0) > 0,
+  },
 ];
 
 function checkFlags(
@@ -328,6 +337,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!recipe) return;
 
     const { resources, cooldowns, debugMode, purchasedUpgrades } = get();
+    if (!isRecipeUnlocked(recipeId, purchasedUpgrades)) return;
 
     if (debugMode) {
       const nextResources = applyCraft(resources, recipeId, purchasedUpgrades);
@@ -574,11 +584,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   assignWorker: (workerId, assignment) => {
-    const { unlockedNpcs, workerAssignments, workerCooldowns } = get();
+    const { unlockedNpcs, workerAssignments, workerCooldowns, purchasedUpgrades } = get();
     const npc = NPCS.find((n) => n.id === workerId);
     if (!npc || npc.role !== "worker") return;
     if (!unlockedNpcs.some((u) => u.id === workerId)) return;
-    if (assignment && !isValidAssignment(assignment)) return;
+    if (assignment && !isValidAssignment(assignment, purchasedUpgrades)) return;
 
     set({
       workerAssignments: { ...workerAssignments, [workerId]: assignment },

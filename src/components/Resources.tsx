@@ -5,6 +5,7 @@ import type { ResourceDef } from "../data/resources";
 import { RECIPES } from "../data/recipes";
 import type { RecipeDef } from "../data/recipes";
 import { getEffectiveCap } from "../data/upgrades";
+import { getDepartmentForRecipe } from "../data/departments";
 import { GatherButton, CraftButton } from "./ActionButtons";
 
 interface ResourceRowProps {
@@ -31,6 +32,14 @@ export function ResourceIcon({ icon, size = 64 }: { icon?: string; size?: number
 
 function getRecipesFor(resId: string): RecipeDef[] {
   return Object.values(RECIPES).filter((r) => r.output.resId === resId);
+}
+
+// A resource belongs to whichever department produces it, found via its
+// (sole, in practice) recipe — pkg/pks and gathered base resources have no
+// producing recipe and so no department.
+function getDepartmentIdForResource(resId: string): string | undefined {
+  const recipe = getRecipesFor(resId)[0];
+  return recipe ? getDepartmentForRecipe(recipe.id)?.id : undefined;
 }
 
 function ResourceRow({ def, resources, purchasedUpgrades }: ResourceRowProps) {
@@ -78,6 +87,13 @@ export default function Resources() {
     (def) => def.category === "passive" || def.category === "worker",
   );
   const craftedResources = visibleResources.filter((def) => def.category === "crafted");
+  const foundryResources = craftedResources.filter(
+    (def) => getDepartmentIdForResource(def.id) === "foundry",
+  );
+  const assemblyFloorResources = craftedResources.filter(
+    (def) => getDepartmentIdForResource(def.id) === "assembly-floor",
+  );
+  const boilerRoomResources = visibleResources.filter((def) => def.category === "assembly");
   const milestoneResources = visibleResources.filter((def) => def.category === "milestone");
   const questResources = visibleResources.filter((def) => def.category === "quest");
 
@@ -115,10 +131,38 @@ export default function Resources() {
         </>
       )}
 
-      {craftedResources.length > 0 && (
+      {foundryResources.length > 0 && (
         <>
-          <h3>Crafted</h3>
-          {craftedResources.map((def) => (
+          <h3>Foundry</h3>
+          {foundryResources.map((def) => (
+            <ResourceRow
+              key={def.id}
+              def={def}
+              resources={resources}
+              purchasedUpgrades={purchasedUpgrades}
+            />
+          ))}
+        </>
+      )}
+
+      {assemblyFloorResources.length > 0 && (
+        <>
+          <h3>Assembly Floor</h3>
+          {assemblyFloorResources.map((def) => (
+            <ResourceRow
+              key={def.id}
+              def={def}
+              resources={resources}
+              purchasedUpgrades={purchasedUpgrades}
+            />
+          ))}
+        </>
+      )}
+
+      {boilerRoomResources.length > 0 && (
+        <>
+          <h3>Boiler Room</h3>
+          {boilerRoomResources.map((def) => (
             <ResourceRow
               key={def.id}
               def={def}

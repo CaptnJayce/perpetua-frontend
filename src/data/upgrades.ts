@@ -5,7 +5,7 @@ export interface UpgradeEffect {
   bonus?: number; // e.g., 25 for +25 capacity
 }
 
-export type UpgradeCategory = "storage" | "resource-unlock" | "unlock";
+export type UpgradeCategory = "storage" | "resource-unlock" | "unlock" | "department";
 
 export interface UpgradeDef {
   id: string;
@@ -21,6 +21,32 @@ export interface UpgradeDef {
 }
 
 export const UPGRADES: Record<string, UpgradeDef> = {
+  "build-assembly-floor": {
+    id: "build-assembly-floor",
+    label: "Build Assembly Floor",
+    description: "Opens the Assembly Floor — unlocks Propeller and Vent production",
+    cost: () => [
+      { resId: "gear", amnt: 20 },
+      { resId: "beams", amnt: 20 },
+    ],
+    maxPurchases: 1,
+    effects: [],
+    category: "department",
+  },
+  "build-boiler-room": {
+    id: "build-boiler-room",
+    label: "Build Boiler Room",
+    description: "Opens the Boiler Room — unlocks Steam Dust/Copper Wire/Glass gathering and the heavy assemblies the Generator and Storage core need",
+    requiresUpgrade: "build-assembly-floor",
+    cost: () => [
+      { resId: "propeller", amnt: 5 },
+      { resId: "vent", amnt: 5 },
+      { resId: "fittings", amnt: 40 },
+    ],
+    maxPurchases: 1,
+    effects: [],
+    category: "department",
+  },
   "unlock-rubber-gathering": {
     id: "unlock-rubber-gathering",
     label: "Rubber Gathering",

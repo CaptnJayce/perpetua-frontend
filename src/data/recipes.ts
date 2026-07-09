@@ -57,14 +57,75 @@ export const RECIPES: Record<string, RecipeDef> = {
     craftCd: 1,
   },
 
+  craftBoiler: {
+    id: "craftBoiler",
+    inputs: [
+      { resId: "beams", amnt: 5 },
+      { resId: "vent", amnt: 2 },
+      { resId: "steamDust", amnt: 8 },
+    ],
+    output: { resId: "boiler", amnt: 1 },
+    craftCd: 2,
+  },
+
+  craftPiston: {
+    id: "craftPiston",
+    inputs: [
+      { resId: "gear", amnt: 4 },
+      { resId: "beams", amnt: 3 },
+    ],
+    output: { resId: "piston", amnt: 1 },
+    craftCd: 2,
+  },
+
+  craftPressureValve: {
+    id: "craftPressureValve",
+    inputs: [
+      { resId: "fittings", amnt: 3 },
+      { resId: "rubber", amnt: 3 },
+      { resId: "glass", amnt: 2 },
+    ],
+    output: { resId: "pressureValve", amnt: 1 },
+    craftCd: 2,
+  },
+
+  craftCoil: {
+    id: "craftCoil",
+    inputs: [
+      { resId: "copperWire", amnt: 6 },
+      { resId: "gear", amnt: 2 },
+    ],
+    output: { resId: "coil", amnt: 1 },
+    craftCd: 2,
+  },
+
+  craftFlywheel: {
+    id: "craftFlywheel",
+    inputs: [
+      { resId: "gear", amnt: 5 },
+      { resId: "propeller", amnt: 2 },
+    ],
+    output: { resId: "flywheel", amnt: 1 },
+    craftCd: 2,
+  },
+
+  craftGauge: {
+    id: "craftGauge",
+    inputs: [
+      { resId: "glass", amnt: 3 },
+      { resId: "fittings", amnt: 2 },
+    ],
+    output: { resId: "gauge", amnt: 1 },
+    craftCd: 2,
+  },
+
   craftGenerator: {
     id: "craftGenerator",
     inputs: [
-      { resId: "gear", amnt: 150 },
-      { resId: "fittings", amnt: 80 },
-      { resId: "tmp", amnt: 150 },
-      { resId: "propeller", amnt: 20 },
-      { resId: "vent", amnt: 15 },
+      { resId: "boiler", amnt: 3 },
+      { resId: "coil", amnt: 4 },
+      { resId: "piston", amnt: 3 },
+      { resId: "flywheel", amnt: 2 },
     ],
     output: { resId: "pkg", amnt: 1 },
   },
@@ -72,10 +133,9 @@ export const RECIPES: Record<string, RecipeDef> = {
   craftStorage: {
     id: "craftStorage",
     inputs: [
-      { resId: "beams", amnt: 150 },
-      { resId: "rubber", amnt: 50 },
-      { resId: "fittings", amnt: 80 },
-      { resId: "vent", amnt: 15 },
+      { resId: "pressureValve", amnt: 4 },
+      { resId: "gauge", amnt: 4 },
+      { resId: "boiler", amnt: 2 },
     ],
     output: { resId: "pks", amnt: 1 },
   },
