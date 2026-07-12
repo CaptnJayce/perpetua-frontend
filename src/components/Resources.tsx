@@ -5,6 +5,7 @@ import type { ResourceDef } from "../data/resources";
 import { RECIPES } from "../data/recipes";
 import type { RecipeDef } from "../data/recipes";
 import { getEffectiveCap } from "../data/upgrades";
+import { getDepartmentForRecipe } from "../data/departments";
 import { GatherButton, CraftButton } from "./ActionButtons";
 
 interface ResourceRowProps {
@@ -33,14 +34,27 @@ function getRecipesFor(resId: string): RecipeDef[] {
   return Object.values(RECIPES).filter((r) => r.output.resId === resId);
 }
 
+function getDepartmentIdForResource(resId: string): string | undefined {
+  const recipe = getRecipesFor(resId)[0];
+  return recipe ? getDepartmentForRecipe(recipe.id)?.id : undefined;
+}
+
 function ResourceRow({ def, resources, purchasedUpgrades }: ResourceRowProps) {
   const effectiveCap = getEffectiveCap(def.id, def.cap, purchasedUpgrades);
   const recipes = getRecipesFor(def.id);
   const hasActions = def.gatherAmt !== undefined || recipes.length > 0;
+  const questionModeActive = useGameStore((s) => s.questionModeActive);
+  const showLorePopup = useGameStore((s) => s.showLorePopup);
 
   return (
     <div key={def.id} className="resource-info">
-      <ResourceIcon icon={def.icon} size={RESOURCE_ICON_SIZE} />
+      <span
+        onClick={
+          questionModeActive ? (e) => showLorePopup(def.id, e.clientX, e.clientY) : undefined
+        }
+      >
+        <ResourceIcon icon={def.icon} size={RESOURCE_ICON_SIZE} />
+      </span>
       <div className="resource-text">
         <div className="resource-name">{def.label}</div>
         <div className="resource-amount">
@@ -66,6 +80,8 @@ export default function Resources() {
   const resources = useGameStore((s) => s.resources);
   const purchasedUpgrades = useGameStore((s) => s.purchasedUpgrades);
   const flags = useGameStore((s) => s.flags);
+  const questionModeActive = useGameStore((s) => s.questionModeActive);
+  const showLorePopup = useGameStore((s) => s.showLorePopup);
 
   const visibleResources = Object.values(RESOURCES).filter(
     (def) => !def.requireFlag || flags.includes(def.requireFlag),
@@ -78,6 +94,13 @@ export default function Resources() {
     (def) => def.category === "passive" || def.category === "worker",
   );
   const craftedResources = visibleResources.filter((def) => def.category === "crafted");
+  const foundryResources = craftedResources.filter(
+    (def) => getDepartmentIdForResource(def.id) === "foundry",
+  );
+  const assemblyFloorResources = craftedResources.filter(
+    (def) => getDepartmentIdForResource(def.id) === "assembly-floor",
+  );
+  const boilerRoomResources = visibleResources.filter((def) => def.category === "assembly");
   const milestoneResources = visibleResources.filter((def) => def.category === "milestone");
   const questResources = visibleResources.filter((def) => def.category === "quest");
 
@@ -115,10 +138,38 @@ export default function Resources() {
         </>
       )}
 
-      {craftedResources.length > 0 && (
+      {foundryResources.length > 0 && (
         <>
-          <h3>Crafted</h3>
-          {craftedResources.map((def) => (
+          <h3>Foundry</h3>
+          {foundryResources.map((def) => (
+            <ResourceRow
+              key={def.id}
+              def={def}
+              resources={resources}
+              purchasedUpgrades={purchasedUpgrades}
+            />
+          ))}
+        </>
+      )}
+
+      {assemblyFloorResources.length > 0 && (
+        <>
+          <h3>Assembly Floor</h3>
+          {assemblyFloorResources.map((def) => (
+            <ResourceRow
+              key={def.id}
+              def={def}
+              resources={resources}
+              purchasedUpgrades={purchasedUpgrades}
+            />
+          ))}
+        </>
+      )}
+
+      {boilerRoomResources.length > 0 && (
+        <>
+          <h3>Boiler Room</h3>
+          {boilerRoomResources.map((def) => (
             <ResourceRow
               key={def.id}
               def={def}
@@ -134,8 +185,16 @@ export default function Resources() {
           <h3>Quest Items</h3>
           {questResources.map((def) => (
             <p key={def.id} className="resource-info">
-              <ResourceIcon icon={def.icon} size={RESOURCE_ICON_SIZE} /> {def.label}:{" "}
-              {Math.floor(resources[def.id])} / {def.cap}
+              <span
+                onClick={
+                  questionModeActive
+                    ? (e) => showLorePopup(def.id, e.clientX, e.clientY)
+                    : undefined
+                }
+              >
+                <ResourceIcon icon={def.icon} size={RESOURCE_ICON_SIZE} />
+              </span>{" "}
+              {def.label}: {Math.floor(resources[def.id])} / {def.cap}
             </p>
           ))}
         </>

@@ -1,33 +1,36 @@
 import { RESOURCES } from "../data/resources";
 import { RECIPES } from "../data/recipes";
 import { getEffectiveCooldown } from "../data/upgrades";
+import { DEPARTMENTS, isDepartmentBuilt } from "../data/departments";
 import { applyGather, applyCraft } from "./production";
 
 export type WorkerAssignment =
   | { type: "gather"; targetId: string }
-  | { type: "craft"; targetId: string };
+  | { type: "department"; departmentId: string };
 
-// Fallback pace for recipes with no craftCd (milestone crafts), so an
-// automated worker assigned to one still retries at a sane cadence.
 const WORKER_CRAFT_INTERVAL = 3;
 
-export function isValidAssignment(assignment: WorkerAssignment): boolean {
+export function isValidAssignment(
+  assignment: WorkerAssignment,
+  purchasedUpgrades: Record<string, number>,
+): boolean {
   if (assignment.type === "gather") {
     return RESOURCES[assignment.targetId]?.gatherAmt !== undefined;
   }
-  return RECIPES[assignment.targetId] !== undefined;
+  const dept = DEPARTMENTS[assignment.departmentId];
+  return dept !== undefined && isDepartmentBuilt(dept, purchasedUpgrades);
 }
 
-function getWorkerInterval(
-  assignment: WorkerAssignment,
+function resolveDepartmentTarget(
+  departmentId: string,
+  resources: Record<string, number>,
   purchasedUpgrades: Record<string, number>,
-): number {
-  if (assignment.type === "gather") {
-    const def = RESOURCES[assignment.targetId];
-    return getEffectiveCooldown(def?.gatherCd ?? 1, purchasedUpgrades);
-  }
-  const recipe = RECIPES[assignment.targetId];
-  return recipe?.craftCd ?? WORKER_CRAFT_INTERVAL;
+): string | undefined {
+  const dept = DEPARTMENTS[departmentId];
+  if (!dept) return undefined;
+  return dept.recipeIds.find(
+    (recipeId) => applyCraft(resources, recipeId, purchasedUpgrades) !== null,
+  );
 }
 
 interface TickWorkersInput {
@@ -67,17 +70,27 @@ export function tickWorkers({
 
     if (cd > 0) continue;
 
-    const produced =
-      assignment.type === "gather"
-        ? applyGather(nextResources, assignment.targetId, purchasedUpgrades)
-        : applyCraft(nextResources, assignment.targetId, purchasedUpgrades);
+    if (assignment.type === "gather") {
+      const produced = applyGather(nextResources, assignment.targetId, purchasedUpgrades);
+      if (produced) nextResources = produced;
 
-    if (produced) nextResources = produced;
+      const def = RESOURCES[assignment.targetId];
+      nextCooldowns[workerId] = getEffectiveCooldown(def?.gatherCd ?? 1, purchasedUpgrades);
+      continue;
+    }
 
-    // Reset the pace whether or not production succeeded, so a blocked
-    // worker (at cap / short on inputs) retries at the same cadence
-    // instead of busy-checking every tick.
-    nextCooldowns[workerId] = getWorkerInterval(assignment, purchasedUpgrades);
+    const targetRecipeId = resolveDepartmentTarget(
+      assignment.departmentId,
+      nextResources,
+      purchasedUpgrades,
+    );
+    if (targetRecipeId) {
+      const produced = applyCraft(nextResources, targetRecipeId, purchasedUpgrades);
+      if (produced) nextResources = produced;
+      nextCooldowns[workerId] = RECIPES[targetRecipeId]?.craftCd ?? WORKER_CRAFT_INTERVAL;
+    } else {
+      nextCooldowns[workerId] = WORKER_CRAFT_INTERVAL;
+    }
   }
 
   return { resources: nextResources, workerCooldowns: nextCooldowns, changed };

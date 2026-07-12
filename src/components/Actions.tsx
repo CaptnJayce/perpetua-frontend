@@ -1,17 +1,22 @@
 import { Fragment, useState } from "react";
 import "./Actions.css";
 import { useGameStore } from "../store";
-import { RESOURCES, getGatherables } from "../data/resources";
-import { RECIPES } from "../data/recipes";
+import { getGatherables } from "../data/resources";
 import { NPCS } from "../data/npcs";
 import { UPGRADES, type UpgradeCategory } from "../data/upgrades";
+import { DEPARTMENTS, isDepartmentBuilt } from "../data/departments";
 import { getNextAvailableNode } from "../data/dialogue";
 import { UpgradeButton } from "./ActionButtons";
 import type { NpcDef } from "../data/npcs";
 import type { WorkerAssignment } from "../systems/workers";
 import type { UnlockEvent } from "../systems/unlocker";
 
-const UPGRADE_CATEGORY_ORDER: UpgradeCategory[] = ["storage", "resource-unlock", "unlock"];
+const UPGRADE_CATEGORY_ORDER: UpgradeCategory[] = [
+  "department",
+  "storage",
+  "resource-unlock",
+  "unlock",
+];
 
 function NpcPicker() {
   const unlockedNpcs = useGameStore((s) => s.unlockedNpcs);
@@ -20,6 +25,8 @@ function NpcPicker() {
   const selectedNpcId = useGameStore((s) => s.selectedNpcId);
   const selectNpc = useGameStore((s) => s.selectNpc);
   const isDialogueActive = useGameStore((s) => s.isDialogueActive);
+  const questionModeActive = useGameStore((s) => s.questionModeActive);
+  const showLorePopup = useGameStore((s) => s.showLorePopup);
   const [shakingId, setShakingId] = useState<string | null>(null);
 
   function hasNewDialogue(npcId: string): boolean {
@@ -28,7 +35,11 @@ function NpcPicker() {
     return getNextAvailableNode(npcId, flags, completedNodeIds) !== null;
   }
 
-  function handlePortraitClick(npc: UnlockEvent, isUnlocked: boolean) {
+  function handlePortraitClick(npc: UnlockEvent, isUnlocked: boolean, e: React.MouseEvent) {
+    if (questionModeActive) {
+      showLorePopup(npc.id, e.clientX, e.clientY);
+      return;
+    }
     if (!isUnlocked) {
       setShakingId(npc.id);
       setTimeout(() => setShakingId(null), 400);
@@ -50,8 +61,8 @@ function NpcPicker() {
             key={npc.id}
             className={`npc-portrait ${isSelected ? "npc-portrait--selected" : ""} ${isShaking ? "npc-portrait--shake" : ""} ${hasNew ? "npc-portrait--new" : ""}`}
             title={npc.name}
-            disabled={isDialogueActive && !isSelected}
-            onClick={() => handlePortraitClick(npc, isUnlocked)}
+            disabled={isDialogueActive && !isSelected && !questionModeActive}
+            onClick={(e) => handlePortraitClick(npc, isUnlocked, e)}
           >
             <img
               src={npc.portrait}
@@ -72,9 +83,17 @@ function WorkerAssignmentRow({ npc }: { npc: NpcDef }) {
   const assignWorker = useGameStore((s) => s.assignWorker);
   const isDialogueActive = useGameStore((s) => s.isDialogueActive);
   const flags = useGameStore((s) => s.flags);
+  const purchasedUpgrades = useGameStore((s) => s.purchasedUpgrades);
   const gatherables = getGatherables(flags);
+  const builtDepartments = Object.values(DEPARTMENTS).filter((d) =>
+    isDepartmentBuilt(d, purchasedUpgrades),
+  );
 
-  const value = assignment ? `${assignment.type}:${assignment.targetId}` : "";
+  const value = assignment
+    ? assignment.type === "gather"
+      ? `gather:${assignment.targetId}`
+      : `department:${assignment.departmentId}`
+    : "";
 
   function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const raw = e.target.value;
@@ -82,8 +101,12 @@ function WorkerAssignmentRow({ npc }: { npc: NpcDef }) {
       assignWorker(npc.id, null);
       return;
     }
-    const [type, targetId] = raw.split(":") as [WorkerAssignment["type"], string];
-    assignWorker(npc.id, { type, targetId });
+    const [type, id] = raw.split(":") as [WorkerAssignment["type"], string];
+    if (type === "gather") {
+      assignWorker(npc.id, { type: "gather", targetId: id });
+    } else {
+      assignWorker(npc.id, { type: "department", departmentId: id });
+    }
   }
 
   return (
@@ -103,10 +126,10 @@ function WorkerAssignmentRow({ npc }: { npc: NpcDef }) {
             </option>
           ))}
         </optgroup>
-        <optgroup label="Craft">
-          {Object.values(RECIPES).map((recipe) => (
-            <option key={recipe.id} value={`craft:${recipe.id}`}>
-              {RESOURCES[recipe.output.resId]?.label ?? recipe.id}
+        <optgroup label="Department">
+          {builtDepartments.map((d) => (
+            <option key={d.id} value={`department:${d.id}`}>
+              {d.label}
             </option>
           ))}
         </optgroup>

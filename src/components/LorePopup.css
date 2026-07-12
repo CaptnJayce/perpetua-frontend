@@ -1,0 +1,18 @@
+.lore-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+.lore-popup {
+  position: fixed;
+  max-width: 260px;
+  background: var(--leather);
+  border: 2px solid var(--brass);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--parchment);
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}

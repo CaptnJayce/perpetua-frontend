@@ -9,6 +9,7 @@ import {
   getEffectiveCraftCost,
 } from "./data/upgrades";
 import { SPECIALIZATIONS } from "./data/specializations";
+import { isRecipeUnlocked } from "./data/departments";
 import {
   getCurrentDialogue,
   getNextAvailableNode,
@@ -64,6 +65,10 @@ interface GameState {
   selectedNpcId: string | null;
   npcDialogueStates: Record<string, NpcDialogueSessionState>;
   dialogueHistoryIndex: number;
+  saveStatus: "pending" | "resolved";
+  isReturningPlayer: boolean;
+  questionModeActive: boolean;
+  activeLorePopup: { id: string; x: number; y: number } | null;
 
   tick: (delta: number) => void;
   gather: (resourceId: string) => void;
@@ -82,10 +87,14 @@ interface GameState {
   assignWorker: (workerId: string, assignment: WorkerAssignment | null) => void;
   setUser: (user: AuthUser | null) => void;
   hydrateSave: (saved: SavedGameFields) => void;
+  markSaveResolved: (foundSave: boolean) => void;
   selectNpc: (npcId: string) => void;
   submitDialogueOption: (option: DialogueOption) => void;
   closeDialogueView: () => void;
   setDialogueHistoryIndex: (index: number) => void;
+  toggleQuestionMode: () => void;
+  showLorePopup: (id: string, x: number, y: number) => void;
+  closeLorePopup: () => void;
 }
 
 const initialResources = Object.fromEntries(
@@ -177,6 +186,14 @@ const CONDITIONAL_FLAGS: {
     flag: "rubber_unlocked",
     condition: (s) => (s.purchasedUpgrades["unlock-rubber-gathering"] ?? 0) > 0,
   },
+  {
+    flag: "assembly_floor_built",
+    condition: (s) => (s.purchasedUpgrades["build-assembly-floor"] ?? 0) > 0,
+  },
+  {
+    flag: "boiler_room_built",
+    condition: (s) => (s.purchasedUpgrades["build-boiler-room"] ?? 0) > 0,
+  },
 ];
 
 function checkFlags(
@@ -208,7 +225,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   user: null,
   selectedNpcId: null,
   npcDialogueStates: {},
+  saveStatus: "pending",
+  isReturningPlayer: false,
   dialogueHistoryIndex: 0,
+  questionModeActive: false,
+  activeLorePopup: null,
 
   tick: (delta) => {
     const {
@@ -323,6 +344,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!recipe) return;
 
     const { resources, cooldowns, debugMode, purchasedUpgrades } = get();
+    if (!isRecipeUnlocked(recipeId, purchasedUpgrades)) return;
 
     if (debugMode) {
       const nextResources = applyCraft(resources, recipeId, purchasedUpgrades);
@@ -569,11 +591,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   assignWorker: (workerId, assignment) => {
-    const { unlockedNpcs, workerAssignments, workerCooldowns } = get();
+    const { unlockedNpcs, workerAssignments, workerCooldowns, purchasedUpgrades } = get();
     const npc = NPCS.find((n) => n.id === workerId);
     if (!npc || npc.role !== "worker") return;
     if (!unlockedNpcs.some((u) => u.id === workerId)) return;
-    if (assignment && !isValidAssignment(assignment)) return;
+    if (assignment && !isValidAssignment(assignment, purchasedUpgrades)) return;
 
     set({
       workerAssignments: { ...workerAssignments, [workerId]: assignment },
@@ -583,5 +605,16 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   setUser: (user) => set({ user }),
 
-  hydrateSave: (saved) => set(saved),
+  markSaveResolved: (foundSave) =>
+    set({ saveStatus: "resolved", isReturningPlayer: foundSave }),
+
+  hydrateSave: (saved) =>
+    set({ ...saved, saveStatus: "resolved", isReturningPlayer: true }),
+
+  toggleQuestionMode: () =>
+    set((s) => ({ questionModeActive: !s.questionModeActive, activeLorePopup: null })),
+
+  showLorePopup: (id, x, y) => set({ activeLorePopup: { id, x, y } }),
+
+  closeLorePopup: () => set({ activeLorePopup: null }),
 }));
