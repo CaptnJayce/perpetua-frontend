@@ -36,7 +36,7 @@ export const UPGRADES: Record<string, UpgradeDef> = {
   "build-boiler-room": {
     id: "build-boiler-room",
     label: "Build Boiler Room",
-    description: "Opens the Boiler Room — unlocks Steam Dust/Copper Wire/Glass gathering and the heavy assemblies the Generator and Storage core need",
+    description: "Opens the Boiler Room — unlocks passive Steam Dust generation, Steam Pipe/Glass gathering, and the heavy assemblies the Generator and Storage core need",
     requiresUpgrade: "build-assembly-floor",
     cost: () => [
       { resId: "propeller", amnt: 5 },

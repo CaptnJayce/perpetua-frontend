@@ -57,6 +57,28 @@ export const RECIPES: Record<string, RecipeDef> = {
     craftCd: 1,
   },
 
+  craftZephyr: {
+    id: "craftZephyr",
+    inputs: [
+      { resId: "propeller", amnt: 4 },
+      { resId: "beams", amnt: 5 },
+      { resId: "fittings", amnt: 3 },
+    ],
+    output: { resId: "zephyr", amnt: 1 },
+    craftCd: 3,
+  },
+
+  craftStrongbox: {
+    id: "craftStrongbox",
+    inputs: [
+      { resId: "boiler", amnt: 4 },
+      { resId: "tmp", amnt: 5 },
+      { resId: "fittings", amnt: 3 },
+    ],
+    output: { resId: "strongbox", amnt: 1 },
+    craftCd: 3,
+  },
+
   craftBoiler: {
     id: "craftBoiler",
     inputs: [
@@ -89,13 +111,13 @@ export const RECIPES: Record<string, RecipeDef> = {
     craftCd: 2,
   },
 
-  craftCoil: {
-    id: "craftCoil",
+  craftGovernor: {
+    id: "craftGovernor",
     inputs: [
-      { resId: "copperWire", amnt: 6 },
+      { resId: "steamPipe", amnt: 6 },
       { resId: "gear", amnt: 2 },
     ],
-    output: { resId: "coil", amnt: 1 },
+    output: { resId: "governor", amnt: 1 },
     craftCd: 2,
   },
 
@@ -123,9 +145,10 @@ export const RECIPES: Record<string, RecipeDef> = {
     id: "craftGenerator",
     inputs: [
       { resId: "boiler", amnt: 3 },
-      { resId: "coil", amnt: 4 },
+      { resId: "governor", amnt: 4 },
       { resId: "piston", amnt: 3 },
       { resId: "flywheel", amnt: 2 },
+      { resId: "zephyr", amnt: 2 },
     ],
     output: { resId: "pkg", amnt: 1 },
   },
@@ -136,6 +159,8 @@ export const RECIPES: Record<string, RecipeDef> = {
       { resId: "pressureValve", amnt: 4 },
       { resId: "gauge", amnt: 4 },
       { resId: "boiler", amnt: 2 },
+      { resId: "flywheel", amnt: 3 },
+      { resId: "strongbox", amnt: 2 },
     ],
     output: { resId: "pks", amnt: 1 },
   },

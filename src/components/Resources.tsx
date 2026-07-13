@@ -93,14 +93,18 @@ export default function Resources() {
   const passiveResources = visibleResources.filter(
     (def) => def.category === "passive" || def.category === "worker",
   );
-  const craftedResources = visibleResources.filter((def) => def.category === "crafted");
-  const foundryResources = craftedResources.filter(
+  const departmentResources = visibleResources.filter(
+    (def) => def.category === "crafted" || def.category === "assembly",
+  );
+  const foundryResources = departmentResources.filter(
     (def) => getDepartmentIdForResource(def.id) === "foundry",
   );
-  const assemblyFloorResources = craftedResources.filter(
+  const assemblyFloorResources = departmentResources.filter(
     (def) => getDepartmentIdForResource(def.id) === "assembly-floor",
   );
-  const boilerRoomResources = visibleResources.filter((def) => def.category === "assembly");
+  const boilerRoomResources = departmentResources.filter(
+    (def) => getDepartmentIdForResource(def.id) === "boiler-room",
+  );
   const milestoneResources = visibleResources.filter((def) => def.category === "milestone");
   const questResources = visibleResources.filter((def) => def.category === "quest");
 
