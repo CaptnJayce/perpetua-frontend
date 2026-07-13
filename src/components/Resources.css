@@ -27,6 +27,24 @@
   margin-left: auto;
 }
 
+.resource-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.resource-section-chevron {
+  display: inline-block;
+  font-size: 12px;
+  transition: transform 0.15s ease;
+}
+
+.resource-section-chevron--open {
+  transform: rotate(90deg);
+}
+
 .milestone-heading {
   margin-top: 16px;
   padding-top: 8px;
