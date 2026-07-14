@@ -37,9 +37,28 @@
 
 .npc-portraits {
   display: flex;
-  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 10px;
   padding: 4px 0;
+}
+
+.npc-portrait-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 1;
+}
+
+.npc-portrait-group--workers {
+  justify-content: flex-end;
+}
+
+.npc-portrait-divider {
+  align-self: stretch;
+  width: 2px;
+  background: var(--brass);
+  flex-shrink: 0;
 }
 
 .npc-portrait {

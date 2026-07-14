@@ -48,32 +48,43 @@ function NpcPicker() {
     selectNpc(npc.id);
   }
 
+  function renderPortrait(npc: NpcDef) {
+    const isUnlocked = unlockedNpcs.some((u) => u.id === npc.id);
+    const isSelected = selectedNpcId === npc.id;
+    const isShaking = shakingId === npc.id;
+    const hasNew = isUnlocked && hasNewDialogue(npc.id);
+
+    return (
+      <button
+        key={npc.id}
+        className={`npc-portrait ${isSelected ? "npc-portrait--selected" : ""} ${isShaking ? "npc-portrait--shake" : ""} ${hasNew ? "npc-portrait--new" : ""}`}
+        title={npc.name}
+        disabled={isDialogueActive && !isSelected && !questionModeActive}
+        onClick={(e) => handlePortraitClick(npc, isUnlocked, e)}
+      >
+        <img
+          src={npc.portrait}
+          style={{
+            filter: isUnlocked ? "none" : "grayscale(100%)",
+          }}
+          alt={npc.name}
+        />
+      </button>
+    );
+  }
+
+  const workerNpcs = NPCS.filter((npc) => npc.role === "worker");
+  const storyNpcs = NPCS.filter((npc) => npc.role === "story");
+
   return (
     <div className="npc-portraits">
-      {NPCS.map((npc) => {
-        const isUnlocked = unlockedNpcs.some((u) => u.id === npc.id);
-        const isSelected = selectedNpcId === npc.id;
-        const isShaking = shakingId === npc.id;
-        const hasNew = isUnlocked && hasNewDialogue(npc.id);
-
-        return (
-          <button
-            key={npc.id}
-            className={`npc-portrait ${isSelected ? "npc-portrait--selected" : ""} ${isShaking ? "npc-portrait--shake" : ""} ${hasNew ? "npc-portrait--new" : ""}`}
-            title={npc.name}
-            disabled={isDialogueActive && !isSelected && !questionModeActive}
-            onClick={(e) => handlePortraitClick(npc, isUnlocked, e)}
-          >
-            <img
-              src={npc.portrait}
-              style={{
-                filter: isUnlocked ? "none" : "grayscale(100%)",
-              }}
-              alt={npc.name}
-            />
-          </button>
-        );
-      })}
+      <div className="npc-portrait-group npc-portrait-group--story">
+        {storyNpcs.map(renderPortrait)}
+      </div>
+      <div className="npc-portrait-divider" />
+      <div className="npc-portrait-group npc-portrait-group--workers">
+        {workerNpcs.map(renderPortrait)}
+      </div>
     </div>
   );
 }
