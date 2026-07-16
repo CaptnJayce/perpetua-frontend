@@ -5,8 +5,16 @@ export const LORE: Record<string, string> = {
   "worker-1":
     "Can be assigned to any part of my floor to help with resource gathering and crafting.",
 
-  hexry:
-    "Hexry. She runs another department here in the Magnus Factory - something called 'Dust Research and Acquisition' or some such similar nonsense. She's got an ego, thankfully I won't see her too much - at least for now.",
+  gaige:
+    "Gaige. She runs another department here in the Magnus Factory - something called 'Dust Research and Acquisition' or some such similar nonsense. She's got an ego, thankfully I won't see her too much - at least for now.",
+
+  belling: "",
+
+  emil: "",
+
+  relia: "",
+
+  ylene: "",
 
   tmp: "A basic metal that's highly malleable yet light and extremely resistant to heat. Perfect for the Perpetual Energy Generator.",
 
