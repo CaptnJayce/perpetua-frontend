@@ -7,6 +7,7 @@ import { UPGRADES, type UpgradeCategory } from "../data/upgrades";
 import { DEPARTMENTS, isDepartmentBuilt } from "../data/departments";
 import { getNextAvailableNode } from "../data/dialogue";
 import { UpgradeButton } from "./ActionButtons";
+import BountyBoard from "./BountyBoard";
 import type { NpcDef } from "../data/npcs";
 import type { WorkerAssignment } from "../systems/workers";
 import type { UnlockEvent } from "../systems/unlocker";
@@ -177,6 +178,11 @@ export default function Actions() {
           </div>
         </section>
       )}
+
+      <section>
+        <h3>Bounty Board</h3>
+        <BountyBoard />
+      </section>
 
       <section>
         <h3>Upgrades</h3>

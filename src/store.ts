@@ -22,6 +22,13 @@ import {
   tickWorkers,
   type WorkerAssignment,
 } from "./systems/workers";
+import {
+  generateBounty,
+  BOUNTY_ROLL_INTERVAL,
+  BOUNTY_ROLL_CHANCE,
+  MAX_ACTIVE_BOUNTIES,
+  type BountyQuest,
+} from "./systems/bounties";
 import type { SavedGameFields } from "./lib/gameSaves";
 
 export interface AuthUser {
@@ -69,10 +76,13 @@ interface GameState {
   isReturningPlayer: boolean;
   questionModeActive: boolean;
   activeLorePopup: { id: string; x: number; y: number } | null;
+  activeBounties: BountyQuest[];
+  bountyRollCooldown: number;
 
   tick: (delta: number) => void;
   gather: (resourceId: string) => void;
   craft: (recipeId: string) => void;
+  fulfillBounty: (bountyId: string) => void;
   setFlag: (flag: string) => void;
   chooseSpecialization: (specializationId: string) => void;
   completeDialogueNode: (npcId: string, nodeId: string) => void;
@@ -230,6 +240,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   dialogueHistoryIndex: 0,
   questionModeActive: false,
   activeLorePopup: null,
+  activeBounties: [],
+  bountyRollCooldown: BOUNTY_ROLL_INTERVAL,
 
   tick: (delta) => {
     const {
@@ -240,9 +252,25 @@ export const useGameStore = create<GameState>((set, get) => ({
       unlockedNpcs,
       purchasedUpgrades,
       flags,
+      activeBounties,
+      bountyRollCooldown,
     } = get();
     const update: Partial<GameState> = {};
-    let dirty = false;
+    let dirty = true;
+
+    const nextBountyRollCooldown = bountyRollCooldown - delta;
+    if (nextBountyRollCooldown <= 0) {
+      update.bountyRollCooldown = BOUNTY_ROLL_INTERVAL;
+      if (activeBounties.length < MAX_ACTIVE_BOUNTIES && Math.random() < BOUNTY_ROLL_CHANCE) {
+        const storyNpcIds = NPCS.filter(
+          (npc) => npc.role === "story" && unlockedNpcs.some((u) => u.id === npc.id),
+        ).map((npc) => npc.id);
+        const bounty = generateBounty(storyNpcIds, flags, resources, activeBounties);
+        if (bounty) update.activeBounties = [...activeBounties, bounty];
+      }
+    } else {
+      update.bountyRollCooldown = nextBountyRollCooldown;
+    }
 
     const activePassiveResources = PASSIVE_RESOURCES.filter(
       (d) => !d.requireFlag || flags.includes(d.requireFlag),
@@ -375,6 +403,28 @@ export const useGameStore = create<GameState>((set, get) => ({
     // finishes ticking down in tick() — same delayed-production timing as
     // gather.
     set({ cooldowns: { ...cooldowns, [recipeId]: recipe.craftCd } });
+  },
+
+  fulfillBounty: (bountyId) => {
+    const { activeBounties, resources, purchasedUpgrades } = get();
+    const bounty = activeBounties.find((b) => b.id === bountyId);
+    if (!bounty) return;
+    if (resources[bounty.giveResId] < bounty.giveAmt) return;
+
+    const rewardDef = RESOURCES[bounty.rewardResId];
+    const effectiveCap = getEffectiveCap(bounty.rewardResId, rewardDef.cap, purchasedUpgrades);
+
+    const nextResources = { ...resources };
+    nextResources[bounty.giveResId] -= bounty.giveAmt;
+    nextResources[bounty.rewardResId] = Math.min(
+      effectiveCap,
+      nextResources[bounty.rewardResId] + bounty.rewardAmt,
+    );
+
+    withUnlocks(get, set, {
+      resources: nextResources,
+      activeBounties: activeBounties.filter((b) => b.id !== bountyId),
+    });
   },
 
   setFlag: (flag) => {
