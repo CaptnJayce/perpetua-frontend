@@ -47,6 +47,18 @@ export const UPGRADES: Record<string, UpgradeDef> = {
     effects: [],
     category: "department",
   },
+  "build-bounty-board": {
+    id: "build-bounty-board",
+    label: "Build Bounty Board",
+    description: "Opens the Bounty Board — story NPCs will occasionally post material trade requests",
+    cost: () => [
+      { resId: "wood", amnt: 25 },
+      { resId: "beams", amnt: 5 },
+    ],
+    maxPurchases: 1,
+    effects: [],
+    category: "department",
+  },
   "unlock-rubber-gathering": {
     id: "unlock-rubber-gathering",
     label: "Rubber Gathering",

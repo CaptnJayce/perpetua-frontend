@@ -152,9 +152,11 @@ function WorkerAssignmentRow({ npc }: { npc: NpcDef }) {
 
 export default function Actions() {
   const unlockedNpcs = useGameStore((s) => s.unlockedNpcs);
+  const flags = useGameStore((s) => s.flags);
   const unlockedWorkers = NPCS.filter(
     (npc) => npc.role === "worker" && unlockedNpcs.some((u) => u.id === npc.id),
   );
+  const bountyBoardBuilt = flags.includes("bounty_board_built");
 
   const upgradesByCategory = UPGRADE_CATEGORY_ORDER.map((category) => ({
     category,
@@ -179,10 +181,12 @@ export default function Actions() {
         </section>
       )}
 
-      <section>
-        <h3>Bounty Board</h3>
-        <BountyBoard />
-      </section>
+      {bountyBoardBuilt && (
+        <section>
+          <h3>Bounty Board</h3>
+          <BountyBoard />
+        </section>
+      )}
 
       <section>
         <h3>Upgrades</h3>

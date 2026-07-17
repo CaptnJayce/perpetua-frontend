@@ -204,6 +204,10 @@ const CONDITIONAL_FLAGS: {
     flag: "boiler_room_built",
     condition: (s) => (s.purchasedUpgrades["build-boiler-room"] ?? 0) > 0,
   },
+  {
+    flag: "bounty_board_built",
+    condition: (s) => (s.purchasedUpgrades["build-bounty-board"] ?? 0) > 0,
+  },
 ];
 
 function checkFlags(
@@ -258,18 +262,20 @@ export const useGameStore = create<GameState>((set, get) => ({
     const update: Partial<GameState> = {};
     let dirty = true;
 
-    const nextBountyRollCooldown = bountyRollCooldown - delta;
-    if (nextBountyRollCooldown <= 0) {
-      update.bountyRollCooldown = BOUNTY_ROLL_INTERVAL;
-      if (activeBounties.length < MAX_ACTIVE_BOUNTIES && Math.random() < BOUNTY_ROLL_CHANCE) {
-        const storyNpcIds = NPCS.filter(
-          (npc) => npc.role === "story" && unlockedNpcs.some((u) => u.id === npc.id),
-        ).map((npc) => npc.id);
-        const bounty = generateBounty(storyNpcIds, flags, resources, activeBounties);
-        if (bounty) update.activeBounties = [...activeBounties, bounty];
+    if (flags.includes("bounty_board_built")) {
+      const nextBountyRollCooldown = bountyRollCooldown - delta;
+      if (nextBountyRollCooldown <= 0) {
+        update.bountyRollCooldown = BOUNTY_ROLL_INTERVAL;
+        if (activeBounties.length < MAX_ACTIVE_BOUNTIES && Math.random() < BOUNTY_ROLL_CHANCE) {
+          const storyNpcIds = NPCS.filter(
+            (npc) => npc.role === "story" && unlockedNpcs.some((u) => u.id === npc.id),
+          ).map((npc) => npc.id);
+          const bounty = generateBounty(storyNpcIds, flags, resources, activeBounties);
+          if (bounty) update.activeBounties = [...activeBounties, bounty];
+        }
+      } else {
+        update.bountyRollCooldown = nextBountyRollCooldown;
       }
-    } else {
-      update.bountyRollCooldown = nextBountyRollCooldown;
     }
 
     const activePassiveResources = PASSIVE_RESOURCES.filter(

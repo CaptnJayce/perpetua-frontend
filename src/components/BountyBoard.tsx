@@ -1,26 +1,53 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./BountyBoard.css";
 import { useGameStore } from "../store";
 import { RESOURCES } from "../data/resources";
 import { NPCS } from "../data/npcs";
+import { BOUNTY_ROLL_CHANCE } from "../systems/bounties";
 import { ResourceIcon } from "./Resources";
 import Modal from "./Modal";
 
+function formatCountdown(seconds: number): string {
+  const s = Math.max(0, Math.ceil(seconds));
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return `${m}:${rem.toString().padStart(2, "0")}`;
+}
+
 export default function BountyBoard() {
   const [open, setOpen] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
   const activeBounties = useGameStore((s) => s.activeBounties);
+  const bountyRollCooldown = useGameStore((s) => s.bountyRollCooldown);
   const resources = useGameStore((s) => s.resources);
   const fulfillBounty = useGameStore((s) => s.fulfillBounty);
   const isDialogueActive = useGameStore((s) => s.isDialogueActive);
+  const prevCountRef = useRef(activeBounties.length);
+
+  useEffect(() => {
+    if (activeBounties.length > prevCountRef.current) {
+      setJustAdded(true);
+      const timeout = setTimeout(() => setJustAdded(false), 2500);
+      prevCountRef.current = activeBounties.length;
+      return () => clearTimeout(timeout);
+    }
+    prevCountRef.current = activeBounties.length;
+  }, [activeBounties.length]);
 
   return (
     <>
-      <button className="action-btn bounty-board-trigger" onClick={() => setOpen(true)}>
+      <button
+        className={`action-btn bounty-board-trigger ${justAdded ? "bounty-board-trigger--new" : ""}`}
+        onClick={() => setOpen(true)}
+      >
         Open Bounty Board
         {activeBounties.length > 0 && (
           <span className="bounty-count-badge">{activeBounties.length}</span>
         )}
       </button>
+      <div className="bounty-roll-status">
+        Next bounty check: {formatCountdown(bountyRollCooldown)} ({Math.round(BOUNTY_ROLL_CHANCE * 100)}% chance)
+      </div>
 
       <Modal
         open={open}
