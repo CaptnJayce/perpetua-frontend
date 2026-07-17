@@ -1,3 +1,5 @@
+import { RESOURCES } from "./resources";
+
 export interface UpgradeEffect {
   type: "storage" | "gatherAmount" | "craftCost" | "cooldownSpeed";
   target?: string; // resource id for storage/gather, recipe id for craft cost
@@ -187,6 +189,23 @@ export const UPGRADES: Record<string, UpgradeDef> = {
     category: "unlock",
   },
 };
+
+for (const upgrade of Object.values(UPGRADES)) {
+  if (upgrade.requiresUpgrade && !UPGRADES[upgrade.requiresUpgrade]) {
+    throw new Error(
+      `Upgrade "${upgrade.id}" requiresUpgrade unknown upgrade "${upgrade.requiresUpgrade}"`,
+    );
+  }
+  for (let level = 0; level < upgrade.maxPurchases; level++) {
+    for (const { resId } of upgrade.cost(level)) {
+      if (!RESOURCES[resId]) {
+        throw new Error(
+          `Upgrade "${upgrade.id}" cost at level ${level} references unknown resource "${resId}"`,
+        );
+      }
+    }
+  }
+}
 
 export function getEffectiveCap(
   resId: string,

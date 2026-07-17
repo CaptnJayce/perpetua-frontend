@@ -255,9 +255,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       bountyRollCooldown,
     } = get();
     const update: Partial<GameState> = {};
-    let dirty = true;
+    let dirty = false;
 
     if (flags.includes("bounty_board_built")) {
+      dirty = true;
       const nextBountyRollCooldown = bountyRollCooldown - delta;
       if (nextBountyRollCooldown <= 0) {
         update.bountyRollCooldown = BOUNTY_ROLL_INTERVAL;

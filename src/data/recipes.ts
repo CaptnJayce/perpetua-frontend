@@ -1,3 +1,5 @@
+import { RESOURCES } from "./resources";
+
 export interface RecipeDef {
   id: string;
   inputs: { resId: string; amnt: number }[];
@@ -165,3 +167,16 @@ export const RECIPES: Record<string, RecipeDef> = {
     output: { resId: "pks", amnt: 1 },
   },
 };
+
+for (const recipe of Object.values(RECIPES)) {
+  for (const { resId } of recipe.inputs) {
+    if (!RESOURCES[resId]) {
+      throw new Error(`Recipe "${recipe.id}" references unknown input resource "${resId}"`);
+    }
+  }
+  if (!RESOURCES[recipe.output.resId]) {
+    throw new Error(
+      `Recipe "${recipe.id}" references unknown output resource "${recipe.output.resId}"`,
+    );
+  }
+}

@@ -119,6 +119,23 @@ export const DIALOGUE_TREES: Record<string, DialogueTree> = {
   },
 };
 
+for (const [npcId, tree] of Object.entries(DIALOGUE_TREES)) {
+  for (const entryId of tree.entryNodeIds) {
+    if (!tree.nodes[entryId]) {
+      throw new Error(`Dialogue tree "${npcId}" entryNodeIds references unknown node "${entryId}"`);
+    }
+  }
+  for (const node of Object.values(tree.nodes)) {
+    for (const option of node.options ?? []) {
+      if (option.nextNodeId && !tree.nodes[option.nextNodeId]) {
+        throw new Error(
+          `Dialogue tree "${npcId}" node "${node.id}" references unknown nextNodeId "${option.nextNodeId}"`,
+        );
+      }
+    }
+  }
+}
+
 export function getCurrentDialogue(
   npcId: string,
   nodeId: string,
