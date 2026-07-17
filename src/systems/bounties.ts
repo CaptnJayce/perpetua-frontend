@@ -1,4 +1,5 @@
 import { RESOURCES, type ResourceDef } from "../data/resources";
+import { getEffectiveCap } from "../data/upgrades";
 
 export interface BountyQuest {
   id: string;
@@ -69,4 +70,24 @@ export function generateBounty(
     rewardResId: rewardDef.id,
     rewardAmt: randomAmount(rewardDef),
   };
+}
+
+export function applyBountyFulfillment(
+  resources: Record<string, number>,
+  bounty: BountyQuest,
+  purchasedUpgrades: Record<string, number>,
+): Record<string, number> | null {
+  if (resources[bounty.giveResId] < bounty.giveAmt) return null;
+
+  const rewardDef = RESOURCES[bounty.rewardResId];
+  const effectiveCap = getEffectiveCap(bounty.rewardResId, rewardDef.cap, purchasedUpgrades);
+
+  const nextResources = { ...resources };
+  nextResources[bounty.giveResId] -= bounty.giveAmt;
+  nextResources[bounty.rewardResId] = Math.min(
+    effectiveCap,
+    nextResources[bounty.rewardResId] + bounty.rewardAmt,
+  );
+
+  return nextResources;
 }

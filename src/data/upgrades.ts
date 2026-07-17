@@ -15,8 +15,6 @@ export interface UpgradeDef {
   maxPurchases: number;
   effects: UpgradeEffect[];
   category: UpgradeCategory;
-  // If set, this upgrade is hidden/unpurchasable until the referenced
-  // upgrade id has been bought at least once — a branch-unlock gate.
   requiresUpgrade?: string;
 }
 

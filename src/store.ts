@@ -24,6 +24,7 @@ import {
 } from "./systems/workers";
 import {
   generateBounty,
+  applyBountyFulfillment,
   BOUNTY_ROLL_INTERVAL,
   BOUNTY_ROLL_CHANCE,
   MAX_ACTIVE_BOUNTIES,
@@ -49,9 +50,6 @@ export interface NpcDialogueProgress {
 export interface NpcDialogueSessionState {
   currentNodeId: string;
   completed: boolean;
-  // Index into the store's lifetime history for this NPC marking where the
-  // current view should start reading from — 0 for a full replay, or the
-  // history length at session-start so only the live session's exchanges show.
   historyStartIndex: number;
 }
 
@@ -130,9 +128,6 @@ function applyNpcUnlocks(
       (u) => NPCS.find((n) => n.id === u.id)?.role === "worker",
     ).length;
 
-    // Newly unlocked NPCs can arrive from any game system (tick, gather,
-    // craft, flags) — auto-select the latest one and, if they have dialogue
-    // ready, open it immediately.
     const newNpc = newNpcs[newNpcs.length - 1];
     const nextNode = getNextAvailableNode(newNpc.id, state.flags, []);
 
@@ -367,8 +362,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     const effectiveCap = getEffectiveCap(resourceId, def.cap, purchasedUpgrades);
     if (resources[resourceId] >= effectiveCap) return;
 
-    // Resources aren't granted until the cooldown finishes ticking down in
-    // tick() — the cooldown represents fetching time, not a click-rate gate.
     const effectiveCd = getEffectiveCooldown(def.gatherCd, purchasedUpgrades);
     set({ cooldowns: { ...cooldowns, [resourceId]: effectiveCd } });
   },
@@ -388,7 +381,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     if (!recipe.craftCd) {
-      // Milestone crafts (pkg/pks) have no cooldown — they resolve instantly.
       const nextResources = applyCraft(resources, recipeId, purchasedUpgrades);
       if (!nextResources) return;
       withUnlocks(get, set, { resources: nextResources });
@@ -405,9 +397,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     const atCap = resources[recipe.output.resId] + recipe.output.amnt > effectiveCap;
     if (!canAfford || atCap) return;
 
-    // Inputs aren't spent and the output isn't granted until the cooldown
-    // finishes ticking down in tick() — same delayed-production timing as
-    // gather.
     set({ cooldowns: { ...cooldowns, [recipeId]: recipe.craftCd } });
   },
 
@@ -415,17 +404,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     const { activeBounties, resources, purchasedUpgrades } = get();
     const bounty = activeBounties.find((b) => b.id === bountyId);
     if (!bounty) return;
-    if (resources[bounty.giveResId] < bounty.giveAmt) return;
 
-    const rewardDef = RESOURCES[bounty.rewardResId];
-    const effectiveCap = getEffectiveCap(bounty.rewardResId, rewardDef.cap, purchasedUpgrades);
-
-    const nextResources = { ...resources };
-    nextResources[bounty.giveResId] -= bounty.giveAmt;
-    nextResources[bounty.rewardResId] = Math.min(
-      effectiveCap,
-      nextResources[bounty.rewardResId] + bounty.rewardAmt,
-    );
+    const nextResources = applyBountyFulfillment(resources, bounty, purchasedUpgrades);
+    if (!nextResources) return;
 
     withUnlocks(get, set, {
       resources: nextResources,
@@ -511,7 +492,6 @@ export const useGameStore = create<GameState>((set, get) => ({
         },
       });
     } else {
-      // No new dialogue — show the full history replay instead.
       set({
         isDialogueActive: false,
         selectedNpcId: npcId,

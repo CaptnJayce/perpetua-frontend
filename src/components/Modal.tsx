@@ -7,8 +7,6 @@ interface ModalProps {
     onClose: () => void;
     title?: string;
     children?: React.ReactNode;
-    // Hides the close button and disables backdrop/Escape dismissal, for
-    // choices the player must make before the modal can go away.
     hideClose?: boolean;
     className?: string;
 }

@@ -20,7 +20,6 @@ function Root() {
 
   useEffect(() => {
     if (!supabase) {
-      // No persistence configured — nothing to wait on, treat as a fresh run.
       markSaveResolved(false);
       return;
     }
