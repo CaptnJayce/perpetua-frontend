@@ -1,4 +1,5 @@
 import "./Resources.css";
+import { useState } from "react";
 import { useGameStore } from "../store";
 import { RESOURCES } from "../data/resources";
 import type { ResourceDef } from "../data/resources";
@@ -28,6 +29,34 @@ export function ResourceIcon({ icon, size = 64 }: { icon?: string; size?: number
     );
   }
   return <img src={icon} className="icon" style={{ width: size, height: size }} />;
+}
+
+function CollapsibleSection({
+  title,
+  className,
+  collapsed,
+  onToggle,
+  children,
+}: {
+  title: string;
+  className?: string;
+  collapsed: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <h3 className={`resource-section-header ${className ?? ""}`} onClick={onToggle}>
+        <span
+          className={`resource-section-chevron ${collapsed ? "" : "resource-section-chevron--open"}`}
+        >
+          ▸
+        </span>
+        {title}
+      </h3>
+      {!collapsed && children}
+    </>
+  );
 }
 
 function getRecipesFor(resId: string): RecipeDef[] {
@@ -93,40 +122,59 @@ export default function Resources() {
   const passiveResources = visibleResources.filter(
     (def) => def.category === "passive" || def.category === "worker",
   );
-  const craftedResources = visibleResources.filter((def) => def.category === "crafted");
-  const foundryResources = craftedResources.filter(
+  const departmentResources = visibleResources.filter(
+    (def) => def.category === "crafted" || def.category === "assembly",
+  );
+  const foundryResources = departmentResources.filter(
     (def) => getDepartmentIdForResource(def.id) === "foundry",
   );
-  const assemblyFloorResources = craftedResources.filter(
+  const assemblyFloorResources = departmentResources.filter(
     (def) => getDepartmentIdForResource(def.id) === "assembly-floor",
   );
-  const boilerRoomResources = visibleResources.filter((def) => def.category === "assembly");
+  const boilerRoomResources = departmentResources.filter(
+    (def) => getDepartmentIdForResource(def.id) === "boiler-room",
+  );
   const milestoneResources = visibleResources.filter((def) => def.category === "milestone");
   const questResources = visibleResources.filter((def) => def.category === "quest");
 
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const toggleSection = (key: string) =>
+    setCollapsedSections((prev) => ({ ...prev, [key]: !prev[key] }));
+
   return (
     <div className="resources">
-      {primaryBaseResources.map((def) => (
-        <ResourceRow
-          key={def.id}
-          def={def}
-          resources={resources}
-          purchasedUpgrades={purchasedUpgrades}
-        />
-      ))}
+      {baseResources.length > 0 && (
+        <CollapsibleSection
+          title="Basics"
+          collapsed={!!collapsedSections.basics}
+          onToggle={() => toggleSection("basics")}
+        >
+          {primaryBaseResources.map((def) => (
+            <ResourceRow
+              key={def.id}
+              def={def}
+              resources={resources}
+              purchasedUpgrades={purchasedUpgrades}
+            />
+          ))}
 
-      {gatedBaseResources.map((def) => (
-        <ResourceRow
-          key={def.id}
-          def={def}
-          resources={resources}
-          purchasedUpgrades={purchasedUpgrades}
-        />
-      ))}
+          {gatedBaseResources.map((def) => (
+            <ResourceRow
+              key={def.id}
+              def={def}
+              resources={resources}
+              purchasedUpgrades={purchasedUpgrades}
+            />
+          ))}
+        </CollapsibleSection>
+      )}
 
       {passiveResources.length > 0 && (
-        <>
-          <h3>Passive</h3>
+        <CollapsibleSection
+          title="Passive"
+          collapsed={!!collapsedSections.passive}
+          onToggle={() => toggleSection("passive")}
+        >
           {passiveResources.map((def) => (
             <ResourceRow
               key={def.id}
@@ -135,12 +183,15 @@ export default function Resources() {
               purchasedUpgrades={purchasedUpgrades}
             />
           ))}
-        </>
+        </CollapsibleSection>
       )}
 
       {foundryResources.length > 0 && (
-        <>
-          <h3>Foundry</h3>
+        <CollapsibleSection
+          title="Foundry"
+          collapsed={!!collapsedSections.foundry}
+          onToggle={() => toggleSection("foundry")}
+        >
           {foundryResources.map((def) => (
             <ResourceRow
               key={def.id}
@@ -149,12 +200,15 @@ export default function Resources() {
               purchasedUpgrades={purchasedUpgrades}
             />
           ))}
-        </>
+        </CollapsibleSection>
       )}
 
       {assemblyFloorResources.length > 0 && (
-        <>
-          <h3>Assembly Floor</h3>
+        <CollapsibleSection
+          title="Assembly Floor"
+          collapsed={!!collapsedSections["assembly-floor"]}
+          onToggle={() => toggleSection("assembly-floor")}
+        >
           {assemblyFloorResources.map((def) => (
             <ResourceRow
               key={def.id}
@@ -163,12 +217,15 @@ export default function Resources() {
               purchasedUpgrades={purchasedUpgrades}
             />
           ))}
-        </>
+        </CollapsibleSection>
       )}
 
       {boilerRoomResources.length > 0 && (
-        <>
-          <h3>Boiler Room</h3>
+        <CollapsibleSection
+          title="Boiler Room"
+          collapsed={!!collapsedSections["boiler-room"]}
+          onToggle={() => toggleSection("boiler-room")}
+        >
           {boilerRoomResources.map((def) => (
             <ResourceRow
               key={def.id}
@@ -177,12 +234,15 @@ export default function Resources() {
               purchasedUpgrades={purchasedUpgrades}
             />
           ))}
-        </>
+        </CollapsibleSection>
       )}
 
       {questResources.length > 0 && (
-        <>
-          <h3>Quest Items</h3>
+        <CollapsibleSection
+          title="Quest Items"
+          collapsed={!!collapsedSections.quest}
+          onToggle={() => toggleSection("quest")}
+        >
           {questResources.map((def) => (
             <p key={def.id} className="resource-info">
               <span
@@ -197,12 +257,16 @@ export default function Resources() {
               {def.label}: {Math.floor(resources[def.id])} / {def.cap}
             </p>
           ))}
-        </>
+        </CollapsibleSection>
       )}
 
       {milestoneResources.length > 0 && (
-        <>
-          <h3 className="milestone-heading">Milestones</h3>
+        <CollapsibleSection
+          title="Milestones"
+          className="milestone-heading"
+          collapsed={!!collapsedSections.milestones}
+          onToggle={() => toggleSection("milestones")}
+        >
           {milestoneResources.map((def) => (
             <ResourceRow
               key={def.id}
@@ -211,7 +275,7 @@ export default function Resources() {
               purchasedUpgrades={purchasedUpgrades}
             />
           ))}
-        </>
+        </CollapsibleSection>
       )}
     </div>
   );

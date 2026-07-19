@@ -1,3 +1,5 @@
+import { RESOURCES } from "./resources";
+
 export interface UpgradeEffect {
   type: "storage" | "gatherAmount" | "craftCost" | "cooldownSpeed";
   target?: string; // resource id for storage/gather, recipe id for craft cost
@@ -15,8 +17,6 @@ export interface UpgradeDef {
   maxPurchases: number;
   effects: UpgradeEffect[];
   category: UpgradeCategory;
-  // If set, this upgrade is hidden/unpurchasable until the referenced
-  // upgrade id has been bought at least once — a branch-unlock gate.
   requiresUpgrade?: string;
 }
 
@@ -36,12 +36,24 @@ export const UPGRADES: Record<string, UpgradeDef> = {
   "build-boiler-room": {
     id: "build-boiler-room",
     label: "Build Boiler Room",
-    description: "Opens the Boiler Room — unlocks Steam Dust/Copper Wire/Glass gathering and the heavy assemblies the Generator and Storage core need",
+    description: "Opens the Boiler Room — unlocks passive Steam Dust generation, Steam Pipe/Glass gathering, and the heavy assemblies the Generator and Storage core need",
     requiresUpgrade: "build-assembly-floor",
     cost: () => [
       { resId: "propeller", amnt: 5 },
       { resId: "vent", amnt: 5 },
       { resId: "fittings", amnt: 40 },
+    ],
+    maxPurchases: 1,
+    effects: [],
+    category: "department",
+  },
+  "build-bounty-board": {
+    id: "build-bounty-board",
+    label: "Build Bounty Board",
+    description: "Opens the Bounty Board — story NPCs will occasionally post material trade requests",
+    cost: () => [
+      { resId: "wood", amnt: 25 },
+      { resId: "beams", amnt: 5 },
     ],
     maxPurchases: 1,
     effects: [],
@@ -177,6 +189,23 @@ export const UPGRADES: Record<string, UpgradeDef> = {
     category: "unlock",
   },
 };
+
+for (const upgrade of Object.values(UPGRADES)) {
+  if (upgrade.requiresUpgrade && !UPGRADES[upgrade.requiresUpgrade]) {
+    throw new Error(
+      `Upgrade "${upgrade.id}" requiresUpgrade unknown upgrade "${upgrade.requiresUpgrade}"`,
+    );
+  }
+  for (let level = 0; level < upgrade.maxPurchases; level++) {
+    for (const { resId } of upgrade.cost(level)) {
+      if (!RESOURCES[resId]) {
+        throw new Error(
+          `Upgrade "${upgrade.id}" cost at level ${level} references unknown resource "${resId}"`,
+        );
+      }
+    }
+  }
+}
 
 export function getEffectiveCap(
   resId: string,

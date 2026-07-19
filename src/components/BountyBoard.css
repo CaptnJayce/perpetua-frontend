@@ -1,0 +1,89 @@
+.bounty-board-modal {
+  max-width: 900px;
+  width: 95%;
+}
+
+.bounty-board-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bounty-board-trigger--new {
+  animation: bounty-pulse 0.6s ease-in-out 2;
+}
+
+@keyframes bounty-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brass) 60%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--brass) 0%, transparent);
+  }
+}
+
+.bounty-roll-status {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--iron);
+}
+
+.bounty-count-badge {
+  background: var(--brass);
+  color: var(--iron);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 1px 6px;
+  min-width: 16px;
+  text-align: center;
+}
+
+.bounty-board {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bounty-empty {
+  color: var(--iron);
+  font-style: italic;
+  font-size: 13px;
+}
+
+.bounty-card {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+  border: 1px dashed var(--brass);
+  background: #0000001a;
+}
+
+.bounty-npc {
+  font-weight: bold;
+  color: var(--brass);
+  min-width: 80px;
+}
+
+.bounty-trade {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.bounty-side {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bounty-arrow {
+  color: var(--brass);
+}
+
+.bounty-fulfill {
+  margin-left: auto;
+}

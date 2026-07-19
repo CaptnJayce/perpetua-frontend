@@ -7,6 +7,7 @@ import { UPGRADES, type UpgradeCategory } from "../data/upgrades";
 import { DEPARTMENTS, isDepartmentBuilt } from "../data/departments";
 import { getNextAvailableNode } from "../data/dialogue";
 import { UpgradeButton } from "./ActionButtons";
+import BountyBoard from "./BountyBoard";
 import type { NpcDef } from "../data/npcs";
 import type { WorkerAssignment } from "../systems/workers";
 import type { UnlockEvent } from "../systems/unlocker";
@@ -48,32 +49,43 @@ function NpcPicker() {
     selectNpc(npc.id);
   }
 
+  function renderPortrait(npc: NpcDef) {
+    const isUnlocked = unlockedNpcs.some((u) => u.id === npc.id);
+    const isSelected = selectedNpcId === npc.id;
+    const isShaking = shakingId === npc.id;
+    const hasNew = isUnlocked && hasNewDialogue(npc.id);
+
+    return (
+      <button
+        key={npc.id}
+        className={`npc-portrait ${isSelected ? "npc-portrait--selected" : ""} ${isShaking ? "npc-portrait--shake" : ""} ${hasNew ? "npc-portrait--new" : ""}`}
+        title={npc.name}
+        disabled={isDialogueActive && !isSelected && !questionModeActive}
+        onClick={(e) => handlePortraitClick(npc, isUnlocked, e)}
+      >
+        <img
+          src={npc.portrait}
+          style={{
+            filter: isUnlocked ? "none" : "grayscale(100%)",
+          }}
+          alt={npc.name}
+        />
+      </button>
+    );
+  }
+
+  const workerNpcs = NPCS.filter((npc) => npc.role === "worker");
+  const storyNpcs = NPCS.filter((npc) => npc.role === "story");
+
   return (
     <div className="npc-portraits">
-      {NPCS.map((npc) => {
-        const isUnlocked = unlockedNpcs.some((u) => u.id === npc.id);
-        const isSelected = selectedNpcId === npc.id;
-        const isShaking = shakingId === npc.id;
-        const hasNew = isUnlocked && hasNewDialogue(npc.id);
-
-        return (
-          <button
-            key={npc.id}
-            className={`npc-portrait ${isSelected ? "npc-portrait--selected" : ""} ${isShaking ? "npc-portrait--shake" : ""} ${hasNew ? "npc-portrait--new" : ""}`}
-            title={npc.name}
-            disabled={isDialogueActive && !isSelected && !questionModeActive}
-            onClick={(e) => handlePortraitClick(npc, isUnlocked, e)}
-          >
-            <img
-              src={npc.portrait}
-              style={{
-                filter: isUnlocked ? "none" : "grayscale(100%)",
-              }}
-              alt={npc.name}
-            />
-          </button>
-        );
-      })}
+      <div className="npc-portrait-group npc-portrait-group--story">
+        {storyNpcs.map(renderPortrait)}
+      </div>
+      <div className="npc-portrait-divider" />
+      <div className="npc-portrait-group npc-portrait-group--workers">
+        {workerNpcs.map(renderPortrait)}
+      </div>
     </div>
   );
 }
@@ -140,9 +152,11 @@ function WorkerAssignmentRow({ npc }: { npc: NpcDef }) {
 
 export default function Actions() {
   const unlockedNpcs = useGameStore((s) => s.unlockedNpcs);
+  const flags = useGameStore((s) => s.flags);
   const unlockedWorkers = NPCS.filter(
     (npc) => npc.role === "worker" && unlockedNpcs.some((u) => u.id === npc.id),
   );
+  const bountyBoardBuilt = flags.includes("bounty_board_built");
 
   const upgradesByCategory = UPGRADE_CATEGORY_ORDER.map((category) => ({
     category,
@@ -164,6 +178,13 @@ export default function Actions() {
               <WorkerAssignmentRow key={npc.id} npc={npc} />
             ))}
           </div>
+        </section>
+      )}
+
+      {bountyBoardBuilt && (
+        <section>
+          <h3>Bounty Board</h3>
+          <BountyBoard />
         </section>
       )}
 
