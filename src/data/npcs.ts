@@ -33,9 +33,7 @@ export const NPCS: NpcDef[] = [
     portrait: "/portrait-placeholder.jpg",
     bodyShot: "/body-shot-portrait.png",
     unlocked: false,
-    unlockCondition: (_resources, flags) =>
-      flags.includes("unlock_worker_one") &&
-      flags.includes("gathering_crafting_upgraded"),
+    unlockCondition: (_resources, flags) => flags.includes("first_bounty_fulfilled"),
     role: "story",
   },
   {

@@ -91,6 +91,7 @@ interface GameState {
   toggleDebugMode: () => void;
   emptyResources: () => void;
   debugGrantGenerator: () => void;
+  debugSpawnBounty: () => void;
   purchaseUpgrade: (upgradeId: string) => void;
   assignWorker: (workerId: string, assignment: WorkerAssignment | null) => void;
   setUser: (user: AuthUser | null) => void;
@@ -409,6 +410,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     const nextResources = applyBountyFulfillment(resources, bounty, purchasedUpgrades);
     if (!nextResources) return;
 
+    get().setFlag("first_bounty_fulfilled");
+
     withUnlocks(get, set, {
       resources: nextResources,
       activeBounties: activeBounties.filter((b) => b.id !== bountyId),
@@ -593,6 +596,16 @@ export const useGameStore = create<GameState>((set, get) => ({
     withUnlocks(get, set, {
       resources: { ...resources, pkg: 1, pks: 1 },
     });
+  },
+
+  debugSpawnBounty: () => {
+    const { debugMode, unlockedNpcs, flags, resources, activeBounties } = get();
+    if (!debugMode) return;
+    const storyNpcIds = NPCS.filter(
+      (npc) => npc.role === "story" && unlockedNpcs.some((u) => u.id === npc.id),
+    ).map((npc) => npc.id);
+    const bounty = generateBounty(storyNpcIds, flags, resources, activeBounties);
+    if (bounty) set({ activeBounties: [...activeBounties, bounty] });
   },
 
   purchaseUpgrade: (upgradeId) => {

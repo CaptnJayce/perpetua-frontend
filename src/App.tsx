@@ -15,6 +15,7 @@ export default function App() {
   const toggleDebugMode = useGameStore((s) => s.toggleDebugMode);
   const emptyResources = useGameStore((s) => s.emptyResources);
   const debugGrantGenerator = useGameStore((s) => s.debugGrantGenerator);
+  const debugSpawnBounty = useGameStore((s) => s.debugSpawnBounty);
   const selectedNpcId = useGameStore((s) => s.selectedNpcId);
   const selectNpc = useGameStore((s) => s.selectNpc);
   const saveStatus = useGameStore((s) => s.saveStatus);
@@ -52,11 +53,13 @@ export default function App() {
         emptyResources();
       } else if (e.key === "W") {
         debugGrantGenerator();
+      } else if (e.key === "B") {
+        debugSpawnBounty();
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [toggleDebugMode, emptyResources, debugGrantGenerator]);
+  }, [toggleDebugMode, emptyResources, debugGrantGenerator, debugSpawnBounty]);
 
   const resourcesRevealed = revealLevel === "resources" || revealLevel === "full";
   const actionsRevealed = revealLevel !== "none";
