@@ -1,0 +1,48 @@
+.missed-dialogue-modal {
+  max-width: 700px;
+  width: 95%;
+}
+
+.missed-dialogue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.missed-dialogue-step {
+  padding: 10px;
+  border: 1px solid var(--brass);
+  background: #0000001a;
+}
+
+.missed-dialogue-npc-text {
+  margin: 0 0 6px;
+  color: var(--parchment);
+}
+
+.missed-dialogue-chosen {
+  margin: 0 0 8px;
+  font-weight: bold;
+  color: #4caf50;
+}
+
+.missed-dialogue-alternatives {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--brass);
+}
+
+.missed-dialogue-alt-text {
+  margin: 0;
+  color: var(--iron);
+  font-style: italic;
+}
+
+.missed-dialogue-alt-preview {
+  margin: 2px 0 0;
+  color: var(--iron);
+  opacity: 0.75;
+  font-size: 13px;
+}

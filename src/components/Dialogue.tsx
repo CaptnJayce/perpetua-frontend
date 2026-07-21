@@ -4,10 +4,12 @@ import { NPCS } from "../data/npcs";
 import { useGameStore } from "../store";
 import { getCurrentDialogue } from "../data/dialogue";
 import { INTRO_NPC_ID, useIntroActive } from "../lib/introReveal";
+import MissedDialogue from "./MissedDialogue";
 
 const TYPEWRITER_CHAR_MS = 30;
 const TYPEWRITER_PAUSE_MS = 500;
 const SENTENCE_END_CHARS = new Set([".", "!", "?"]);
+const COMBO_END_CHARS = new Set(["!", "?"]);
 
 export default function Dialogue() {
   const selectedNpcId = useGameStore((s) => s.selectedNpcId);
@@ -76,8 +78,9 @@ export default function Dialogue() {
       if (skippedRef.current || len >= text.length) return;
       const prevChar = len > 0 ? text[len - 1] : "";
       const midEllipsis = prevChar === "." && text[len] === ".";
+      const midCombo = COMBO_END_CHARS.has(prevChar) && COMBO_END_CHARS.has(text[len]);
       let delay = TYPEWRITER_CHAR_MS;
-      if (midEllipsis) {
+      if (midEllipsis || midCombo) {
         delay = TYPEWRITER_CHAR_MS;
       } else if (prevChar === "." && text.slice(Math.max(0, len - 3), len) === "...") {
         delay = TYPEWRITER_CHAR_MS + TYPEWRITER_PAUSE_MS * 2;
@@ -176,6 +179,10 @@ export default function Dialogue() {
                 &#8594;
               </button>
             </div>
+          )}
+
+          {isComplete && history.length > 0 && selectedNpcId && (
+            <MissedDialogue npcId={selectedNpcId} history={history} />
           )}
         </div>
         <div className="dialogue-right">
