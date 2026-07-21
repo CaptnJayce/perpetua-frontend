@@ -8,7 +8,8 @@ export const LORE: Record<string, string> = {
   gaige:
     "Gaige. She runs another department here in the Magnus Factory - something called 'Dust Research and Acquisition' or some such similar nonsense. She's got an ego, thankfully I won't see her too much - at least for now.",
 
-  belling: "",
+  belling:
+    "Belling is an old friend of mine that helped nepo me into the Magnus Factory. Not many people listened to my ideas back then, but Belling did, and made the Mantle of Logic listen too. I owe him a lot. ",
 
   emil: "",
 
@@ -18,7 +19,7 @@ export const LORE: Record<string, string> = {
 
   tmp: "A basic metal that's highly malleable yet light and extremely resistant to heat. Perfect for the Perpetual Energy Generator.",
 
-  wood: "It's wood mate not much else to say, though as of seven weeks ago it's no longer a renewable resource - our forests are completely gone and our reserves of wood are charred, hence the name 'Blazer Wood'. Still useful, though limited.",
+  wood: "It's wood mate not much else to say, though as of the last fifty years it's no longer a renewable resource - our forests are completely gone and our reserves of wood are charred, hence the name 'Blazer Wood'. Still useful, though limited.",
 
   rubber:
     "A heat resistant adhesive. This'll be very useful for crafting more complex components in the future.",
