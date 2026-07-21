@@ -5,6 +5,10 @@ import { useGameStore } from "../store";
 import { getCurrentDialogue } from "../data/dialogue";
 import { INTRO_NPC_ID, useIntroActive } from "../lib/introReveal";
 
+const TYPEWRITER_CHAR_MS = 30;
+const TYPEWRITER_PAUSE_MS = 500;
+const SENTENCE_END_CHARS = new Set([".", "!", "?"]);
+
 export default function Dialogue() {
   const selectedNpcId = useGameStore((s) => s.selectedNpcId);
   const introActive = useIntroActive();
@@ -51,6 +55,46 @@ export default function Dialogue() {
     ? fullHistory.slice(dialogueState.historyStartIndex)
     : [];
 
+  const liveText = currentNode?.text ?? "";
+  const [displayedLength, setDisplayedLength] = useState(0);
+  const [typingNode, setTypingNode] = useState(currentNode);
+  const skippedRef = useRef(false);
+  if (currentNode !== typingNode) {
+    setTypingNode(currentNode);
+    setDisplayedLength(0);
+  }
+  const isTyping = !isComplete && displayedLength < liveText.length;
+
+  useEffect(() => {
+    skippedRef.current = false;
+    if (isComplete || !currentNode || currentNode.text.length === 0) return;
+
+    const text = currentNode.text;
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    function schedule(len: number) {
+      if (skippedRef.current || len >= text.length) return;
+      const prevChar = len > 0 ? text[len - 1] : "";
+      const midEllipsis = prevChar === "." && text[len] === ".";
+      let delay = TYPEWRITER_CHAR_MS;
+      if (midEllipsis) {
+        delay = TYPEWRITER_CHAR_MS;
+      } else if (prevChar === "." && text.slice(Math.max(0, len - 3), len) === "...") {
+        delay = TYPEWRITER_CHAR_MS + TYPEWRITER_PAUSE_MS * 2;
+      } else if (SENTENCE_END_CHARS.has(prevChar)) {
+        delay = TYPEWRITER_CHAR_MS + TYPEWRITER_PAUSE_MS;
+      }
+      timeoutId = setTimeout(() => {
+        if (skippedRef.current) return;
+        setDisplayedLength(len + 1);
+        schedule(len + 1);
+      }, delay);
+    }
+
+    schedule(0);
+    return () => clearTimeout(timeoutId);
+  }, [currentNode, isComplete]);
+
   if (!fullNpc) {
     return (
       <div className="dialogue">
@@ -71,7 +115,15 @@ export default function Dialogue() {
             )}
 
             <h2 className="npc-name">{fullNpc.name}</h2>
-            <div className="dialogue-bubble">
+            <div
+              className={`dialogue-bubble ${isTyping ? "dialogue-bubble--typing" : ""}`}
+              onClick={() => {
+                if (isTyping) {
+                  skippedRef.current = true;
+                  setDisplayedLength(liveText.length);
+                }
+              }}
+            >
               {isComplete && history.length > 0 ? (
                 <div className="dialogue-history">
                   <p className="history-npc-text">
@@ -82,12 +134,12 @@ export default function Dialogue() {
                   </p>
                 </div>
               ) : (
-                <p>{currentNode?.text ?? ""}</p>
+                <p>{liveText.slice(0, displayedLength)}</p>
               )}
             </div>
           </div>
 
-          {!isComplete && currentNode?.options && (
+          {!isComplete && !isTyping && currentNode?.options && (
             <div className={`dialogue-options fade-in-content ${contentVisible ? "fade-in-content--visible" : ""}`}>
               {currentNode.options
                 .filter((option) => !option.requireFlag || flags.includes(option.requireFlag))

@@ -47,6 +47,10 @@
   font-size: 16px;
 }
 
+.dialogue-bubble--typing {
+  cursor: pointer;
+}
+
 .dialogue-nav {
   display: flex;
   justify-content: space-between;
