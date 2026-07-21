@@ -6,6 +6,15 @@
   overflow-y: auto;
 }
 
+.current-quest {
+  padding: 6px 10px;
+  margin-bottom: 12px;
+  border: 1px solid var(--brass);
+  background: #0000001a;
+  color: var(--parchment);
+  font-size: 13px;
+}
+
 .upgrade-row {
   display: flex;
   flex-wrap: wrap;

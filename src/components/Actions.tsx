@@ -5,6 +5,7 @@ import { getGatherables } from "../data/resources";
 import { NPCS } from "../data/npcs";
 import { UPGRADES, type UpgradeCategory } from "../data/upgrades";
 import { DEPARTMENTS, isDepartmentBuilt } from "../data/departments";
+import { getCurrentQuest } from "../data/quests";
 import { getNextAvailableNode } from "../data/dialogue";
 import { UpgradeButton } from "./ActionButtons";
 import BountyBoard from "./BountyBoard";
@@ -36,7 +37,11 @@ function NpcPicker() {
     return getNextAvailableNode(npcId, flags, completedNodeIds) !== null;
   }
 
-  function handlePortraitClick(npc: UnlockEvent, isUnlocked: boolean, e: React.MouseEvent) {
+  function handlePortraitClick(
+    npc: UnlockEvent,
+    isUnlocked: boolean,
+    e: React.MouseEvent,
+  ) {
     if (questionModeActive) {
       showLorePopup(npc.id, e.clientX, e.clientY);
       return;
@@ -153,10 +158,16 @@ function WorkerAssignmentRow({ npc }: { npc: NpcDef }) {
 export default function Actions() {
   const unlockedNpcs = useGameStore((s) => s.unlockedNpcs);
   const flags = useGameStore((s) => s.flags);
+  const npcDialogueProgress = useGameStore((s) => s.npcDialogueProgress);
   const unlockedWorkers = NPCS.filter(
     (npc) => npc.role === "worker" && unlockedNpcs.some((u) => u.id === npc.id),
   );
   const bountyBoardBuilt = flags.includes("bounty_board_built");
+  const currentQuest = getCurrentQuest({
+    flags,
+    npcDialogueProgress,
+    unlockedNpcs,
+  });
 
   const upgradesByCategory = UPGRADE_CATEGORY_ORDER.map((category) => ({
     category,
@@ -165,6 +176,10 @@ export default function Actions() {
 
   return (
     <div className="actions">
+      {currentQuest && (
+        <div className="current-quest">Current Quest: {currentQuest.name}</div>
+      )}
+
       <section>
         <h3>Talk</h3>
         <NpcPicker />
