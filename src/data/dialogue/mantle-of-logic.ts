@@ -1,7 +1,13 @@
 import type { DialogueTree } from "./types";
 
 export const mantleOfLogicDialogue: DialogueTree = {
-  entryNodeIds: ["intro", "worker_visit", "specialization_intro"],
+  entryNodeIds: [
+    "intro",
+    "worker_visit",
+    "worker_visit_2",
+    "worker_visit_3",
+    "specialization_intro",
+  ],
   nodes: {
     intro: {
       id: "intro",
@@ -37,6 +43,30 @@ export const mantleOfLogicDialogue: DialogueTree = {
           text: "Thank you. I'll put him to use.",
           nextNodeId: "end",
           setFlag: "unlock_worker_one",
+        },
+      ],
+    },
+    worker_visit_2: {
+      id: "worker_visit_2",
+      requireFlag: "assembly_floor_built",
+      text: "Nice job on getting this floor built. Here's a new hire for you to make use of.",
+      options: [
+        {
+          text: "Thank you!",
+          nextNodeId: "end",
+          setFlag: "unlock_worker_two",
+        },
+      ],
+    },
+    worker_visit_3: {
+      id: "worker_visit_3",
+      requireFlag: "boiler_room_built",
+      text: "Yet another worker for you. You must be getting close to that PKG now.",
+      options: [
+        {
+          text: "Slow and steady.",
+          nextNodeId: "end",
+          setFlag: "unlock_worker_three",
         },
       ],
     },

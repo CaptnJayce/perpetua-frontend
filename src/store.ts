@@ -641,11 +641,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   assignWorker: (workerId, assignment) => {
-    const { unlockedNpcs, workerAssignments, workerCooldowns, purchasedUpgrades } = get();
+    const { unlockedNpcs, workerAssignments, workerCooldowns, purchasedUpgrades, flags } = get();
     const npc = NPCS.find((n) => n.id === workerId);
     if (!npc || npc.role !== "worker") return;
     if (!unlockedNpcs.some((u) => u.id === workerId)) return;
-    if (assignment && !isValidAssignment(assignment, purchasedUpgrades)) return;
+    if (assignment && !isValidAssignment(assignment, flags, purchasedUpgrades)) return;
 
     set({
       workerAssignments: { ...workerAssignments, [workerId]: assignment },

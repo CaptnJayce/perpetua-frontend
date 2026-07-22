@@ -1,16 +1,15 @@
 import { Fragment, useState } from "react";
 import "./Actions.css";
 import { useGameStore } from "../store";
-import { getGatherables } from "../data/resources";
+import { getGatherables, RESOURCES } from "../data/resources";
 import { NPCS } from "../data/npcs";
 import { UPGRADES, type UpgradeCategory } from "../data/upgrades";
-import { DEPARTMENTS, isDepartmentBuilt } from "../data/departments";
 import { getCurrentQuest } from "../data/quests";
 import { getNextAvailableNode } from "../data/dialogue";
 import { UpgradeButton } from "./ActionButtons";
 import BountyBoard from "./BountyBoard";
 import type { NpcDef } from "../data/npcs";
-import type { WorkerAssignment } from "../systems/workers";
+import { getCraftableTargets } from "../systems/workers";
 import type { UnlockEvent } from "../systems/unlocker";
 
 const UPGRADE_CATEGORY_ORDER: UpgradeCategory[] = [
@@ -102,28 +101,17 @@ function WorkerAssignmentRow({ npc }: { npc: NpcDef }) {
   const flags = useGameStore((s) => s.flags);
   const purchasedUpgrades = useGameStore((s) => s.purchasedUpgrades);
   const gatherables = getGatherables(flags);
-  const builtDepartments = Object.values(DEPARTMENTS).filter((d) =>
-    isDepartmentBuilt(d, purchasedUpgrades),
-  );
+  const craftables = getCraftableTargets(purchasedUpgrades);
 
-  const value = assignment
-    ? assignment.type === "gather"
-      ? `gather:${assignment.targetId}`
-      : `department:${assignment.departmentId}`
-    : "";
+  const value = assignment?.targetId ?? "";
 
   function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const raw = e.target.value;
-    if (!raw) {
+    const targetId = e.target.value;
+    if (!targetId) {
       assignWorker(npc.id, null);
       return;
     }
-    const [type, id] = raw.split(":") as [WorkerAssignment["type"], string];
-    if (type === "gather") {
-      assignWorker(npc.id, { type: "gather", targetId: id });
-    } else {
-      assignWorker(npc.id, { type: "department", departmentId: id });
-    }
+    assignWorker(npc.id, { targetId });
   }
 
   return (
@@ -138,17 +126,20 @@ function WorkerAssignmentRow({ npc }: { npc: NpcDef }) {
         <option value="">Unassigned</option>
         <optgroup label="Gather">
           {gatherables.map((r) => (
-            <option key={r.id} value={`gather:${r.id}`}>
+            <option key={r.id} value={r.id}>
               {r.label}
             </option>
           ))}
         </optgroup>
-        <optgroup label="Department">
-          {builtDepartments.map((d) => (
-            <option key={d.id} value={`department:${d.id}`}>
-              {d.label}
-            </option>
-          ))}
+        <optgroup label="Craft">
+          {craftables.map((recipe) => {
+            const outputDef = RESOURCES[recipe.output.resId];
+            return (
+              <option key={recipe.id} value={recipe.output.resId}>
+                {outputDef?.label ?? recipe.output.resId}
+              </option>
+            );
+          })}
         </optgroup>
       </select>
     </div>
